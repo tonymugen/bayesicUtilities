@@ -98,7 +98,19 @@ GenerateMT::GenerateMT(){
 	for (; mti_ < n_; mti_++) {
 		mt_[mti_] = (f * (mt_[mti_ - 1]^(mt_[mti_ - 1] >> 62)) + mti_);
 	}
+}
 
+GenerateMT::GenerateMT(const uint64_t &seed){
+	// start by using RDTSC to set the seed
+	uint32_t lo   = 0;
+	uint32_t hi   = 0;
+	uint64_t f = 6364136223846793005ULL;
+	mt_[0]     = seed;
+	mti_       = 1;
+
+	for (; mti_ < n_; mti_++) {
+		mt_[mti_] = (f * (mt_[mti_ - 1]^(mt_[mti_ - 1] >> 62)) + mti_);
+	}
 }
 
 uint64_t GenerateMT::ranInt() const{
@@ -118,7 +130,6 @@ uint64_t GenerateMT::ranInt() const{
 		mt_[n_ - 1] = mt_[m_ - 1]^(x_>>1)^alt_[static_cast<size_t>(x_&1ULL)];
 
 		mti_ = 0;
-
 	}
 	// extract pseudo-random number
 	x_ = mt_[mti_++];
@@ -262,7 +273,7 @@ RanDraw::RanDraw(){
 	}
 
 
-	// now test for RDRAND. bit 30 of ECX when CPUINFO invoked with EAX set to 01H
+	// now test for RDRAND bit 30 of ECX when CPUINFO invoked with EAX set to 01H
 	leaf = 0x1;
 	asm volatile ("cpuid;"
 					: "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
@@ -278,6 +289,12 @@ RanDraw::RanDraw(){
 	}
 
 }
+
+RanDraw::RanDraw(const uint64_t &seed) {
+	rng_  = new GenerateMT(seed);
+	kind_ = 'm';
+}
+
 uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) const{
 	if (min >= max) {
 		throw string("Lower bound not smaller than upper bound");
@@ -301,6 +318,7 @@ vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N){
 	}
 	return out; // relying on copy elision
 }
+
 double RanDraw::runifnz() const{
 	double rnz = 0.0;
 	do {

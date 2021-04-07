@@ -127,7 +127,7 @@ namespace BayesicSpace {
 
 	/** \brief Pseudo-random number generator
 	 *
-	 * An implementaiton of the 64-bit MT19937 ("Mersenne Twister")  \cite matsumoto98a pseudo-random number generator (PRNG). The constructor automatically seeds the PRNG. The implementation was guided by the reference code [posted by the authors](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt64.html ).
+	 * An implementation of the 64-bit MT19937 ("Mersenne Twister")  \cite matsumoto98a pseudo-random number generator (PRNG). The constructor automatically seeds the PRNG. The implementation was guided by the reference code [posted by the authors](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt64.html ).
 	 */
 	class GenerateMT final : public Generate {
 	public:
@@ -136,6 +136,11 @@ namespace BayesicSpace {
 		 * Seeds the PRNG with a call to the _RDTSC_ instruction.
 		 */
 		GenerateMT();
+		/** \brief Constructor with seed
+		 *
+		 * \param[in] seed seed value
+		 */
+		GenerateMT(const uint64_t &seed);
 		/** \brief Protected destructor */
 		~GenerateMT(){};
 		/** \brief Copy constructor
@@ -211,28 +216,34 @@ namespace BayesicSpace {
 		 * Throws "CPU_unsupported" string object if the CPU is not AMD or Intel.
 		 */
 		RanDraw();
-
+		/** \brief Constructor with seed
+		 *
+		 * Sets the provided seed and uses the Mersenne Twister. Is CPU agnostic.
+		 *
+		 * \param[in] seed seed value
+		 */
+		RanDraw(const uint64_t &seed);
 		/** \brief Destructor */
 		~RanDraw(){ delete rng_; };
 		/** \brief Copy constructor
 		 *
-		 * \param[in] old pbject to be copied
+		 * \param[in] old object to be copied
 		 */
 		RanDraw(const RanDraw &old) = default;
 		/** \brief Move constructor
 		 *
-		 * \param[in] old pbject to be moved
+		 * \param[in] old object to be moved
 		 */
 		RanDraw(RanDraw &&old) = default;
 
 		/** \brief Copy assignment
 		 *
-		 * \param[in] old pbject to be copied
+		 * \param[in] old object to be copied
 		 */
 		RanDraw & operator= (const RanDraw &old) = default;
 		/** \brief Move assignment
 		 *
-		 * \param[in] old pbject to be moved
+		 * \param[in] old object to be moved
 		 */
 		RanDraw & operator= (RanDraw &&old) = default;
 		/** \brief Query RNG kind
@@ -335,7 +346,7 @@ namespace BayesicSpace {
 		double rgamma(const double &alpha, const double &beta) const { return beta > 0.0 ? (this->rgamma(alpha))/beta : nan(""); };
 		/** \brief A Dirichlet deviate
 		 *
-		 * Generates a vector of probabilities, given a vector of concetration parameters \f$ \alpha_K > 0 \f$.
+		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
 		 *
 		 * \param[in] alpha vector of concentration parameters
 		 * \param[out] p vector of probabilities, must be the same length as \f$ \alpha \f$.
