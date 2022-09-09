@@ -343,7 +343,7 @@ namespace BayesicSpace {
 		 * \param[in] beta scale parameter \f$ \beta \f$
 		 * \return a sample from the general Gamma distribution
 		 */
-		double rgamma(const double &alpha, const double &beta) const { return beta > 0.0 ? (this->rgamma(alpha))/beta : nan(""); };
+		double rgamma(const double &alpha, const double &beta) const { return beta > 0.0 ? ( this->rgamma(alpha) )/beta : nan(""); };
 		/** \brief A Dirichlet deviate
 		 *
 		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
