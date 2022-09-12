@@ -27,10 +27,12 @@
  *
  */
 
+#include <array>
 #include <string>
-#include <cstring>
-#include <cstdint>
+#include <vector>
 #include <cmath>
+#include <memory>
+#include <numeric>
 #include <immintrin.h>
 
 #include "random.hpp"
@@ -38,7 +40,7 @@
 using namespace BayesicSpace;
 
 // GenerateHR methods
-uint64_t GenerateHR::ranInt() const {
+uint64_t GenerateHR::ranInt() noexcept {
 	unsigned long long rInt;
 	// this can be in infinite loop if the random number pool is depleted
 	// but then we have more serious system-wide issues
@@ -49,18 +51,18 @@ uint64_t GenerateHR::ranInt() const {
 }
 
 // GenerateMT static members
-constexpr uint16_t GenerateMT::n_      = 312;
-constexpr uint16_t GenerateMT::m_      = 156;
-constexpr uint64_t GenerateMT::lm_     = static_cast<uint64_t>(0xFFFFFFFF80000000);
-constexpr uint64_t GenerateMT::um_     = static_cast<uint64_t>(0x7FFFFFFF);
-constexpr uint64_t GenerateMT::b_      = static_cast<uint64_t>(0x71D67FFFEDA60000);
-constexpr uint64_t GenerateMT::c_      = static_cast<uint64_t>(0xFFF7EEE000000000);
-constexpr uint64_t GenerateMT::d_      = static_cast<uint64_t>(0x5555555555555555);
-constexpr uint32_t GenerateMT::l_      = 43;
-constexpr uint32_t GenerateMT::s_      = 17;
-constexpr uint32_t GenerateMT::t_      = 37;
-constexpr uint32_t GenerateMT::u_      = 29;
-constexpr uint64_t GenerateMT::alt_[2] = {static_cast<uint64_t>(0), static_cast<uint64_t>(0xB5026F5AA96619E9)};
+constexpr uint16_t GenerateMT::n_  = 312;
+constexpr uint16_t GenerateMT::m_  = 156;
+constexpr uint64_t GenerateMT::lm_ = static_cast<uint64_t>(0xFFFFFFFF80000000);
+constexpr uint64_t GenerateMT::um_ = static_cast<uint64_t>(0x7FFFFFFF);
+constexpr uint64_t GenerateMT::b_  = static_cast<uint64_t>(0x71D67FFFEDA60000);
+constexpr uint64_t GenerateMT::c_  = static_cast<uint64_t>(0xFFF7EEE000000000);
+constexpr uint64_t GenerateMT::d_  = static_cast<uint64_t>(0x5555555555555555);
+constexpr uint32_t GenerateMT::l_  = 43;
+constexpr uint32_t GenerateMT::s_  = 17;
+constexpr uint32_t GenerateMT::t_  = 37;
+constexpr uint32_t GenerateMT::u_  = 29;
+constexpr std::array<uint64_t, 2> GenerateMT::alt_{static_cast<uint64_t>(0), static_cast<uint64_t>(0xB5026F5AA96619E9)};
 
 //GenerateMT methods
 GenerateMT::GenerateMT() {
@@ -88,7 +90,20 @@ GenerateMT::GenerateMT(const uint64_t &seed) {
 	}
 }
 
-uint64_t GenerateMT::ranInt() const {
+GenerateMT::GenerateMT(GenerateMT &&old) {
+	*this = std::move(old);
+}
+
+GenerateMT & GenerateMT::operator= (GenerateMT &&old) {
+	if (this != &old){
+		mt_  = std::move(old.mt_);
+		mti_ = old.mti_;
+		x_   = old.x_;
+	}
+	return *this;
+}
+
+uint64_t GenerateMT::ranInt() noexcept {
 	if (mti_ == n_){ // do we need to re-run the twister?
 		size_t i = 0;
 		for (; i < n_ - m_; ++i){ // first _m words
@@ -118,7 +133,7 @@ uint64_t GenerateMT::ranInt() const {
 
 // RanDraw static members
 constexpr double RanDraw::paramR_ = 3.44428647676;
-constexpr double RanDraw::ytab_[128] = {
+constexpr std::array<double, 128> RanDraw::ytab_ = {
 	1.0, 0.963598623011, 0.936280813353, 0.913041104253,
 	0.892278506696, 0.873239356919, 0.855496407634, 0.838778928349,
 	0.822902083699, 0.807732738234, 0.793171045519, 0.779139726505,
@@ -152,7 +167,7 @@ constexpr double RanDraw::ytab_[128] = {
 	0.0256741818288, 0.0220844372634, 0.0185735200577, 0.0151490552854,
 	0.0118216532614, 0.00860719483079, 0.00553245272614, 0.00265435214565
 };
-constexpr uint64_t RanDraw::ktab_[128] = {
+constexpr std::array<uint64_t, 128> RanDraw::ktab_ = {
 	0, 12590644, 14272653, 14988939,
 	15384584, 15635009, 15807561, 15933577,
 	16029594, 16105155, 16166147, 16216399,
@@ -186,7 +201,7 @@ constexpr uint64_t RanDraw::ktab_[128] = {
 	16442518, 16408804, 16364095, 16301683,
 	16207738, 16047994, 15704248, 15472926
 };
-constexpr double RanDraw::wtab_[128] = {
+constexpr std::array<double, 128> RanDraw::wtab_ = {
 	1.62318314817e-08, 2.16291505214e-08, 2.54246305087e-08, 2.84579525938e-08,
 	3.10340022482e-08, 3.33011726243e-08, 3.53439060345e-08, 3.72152672658e-08,
 	3.8950989572e-08, 4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
@@ -222,65 +237,42 @@ constexpr double RanDraw::wtab_[128] = {
 };
 
 RanDraw::RanDraw() {
-	std::string error;
-
-	uint32_t eax;
-	uint32_t ebx;
-	uint32_t ecx;
-	uint32_t edx;
-
-	uint32_t leaf    = 0;
-	uint32_t subleaf = 0;
-
-	// first look at vendor info
-	asm volatile ("cpuid;"
-					: "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-					: "a" (leaf), "c" (subleaf)
-					);
-
-	if ( !(
-				(memcmp(reinterpret_cast<char*>(&ebx), "Genu", 4) && memcmp(reinterpret_cast<char*>(&edx), "ineI", 4) && memcmp(reinterpret_cast<char*>(&ecx), "ntel", 4)) ||
-				(memcmp(reinterpret_cast<char*>(&ebx), "Auth", 4) && memcmp(reinterpret_cast<char*>(&edx), "enti", 4) && memcmp(reinterpret_cast<char*>(&ecx), "cAMD", 4))
-			)){
-		error = "CPU_unsupported";
-		throw error;
-	}
-
-
-	// now test for RDRAND bit 30 of ECX when CPUINFO invoked with EAX set to 01H
-	leaf = 0x1;
-	asm volatile ("cpuid;"
-					: "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)
-					: "a" (leaf), "c" (subleaf)
-					);
-
-	if ( (ecx & 0x40000000) == 0x40000000 ){ // bit mask 0x40000000 for the 30th bit
-		rng_  = new GenerateHR(); // have hardware random numbers
-		kind_ = 'h';
-	} else {
-		rng_  = new GenerateMT(); // use MT
-		kind_ = 'm';
-	}
-
+#ifdef _rdrand64_step
+	rng_  = std::make_unique<GenerateHR>(); // have hardware random numbers
+	kind_ = 'h';
+#else
+	rng_  = std::make_unique<GenerateMT>(); // use MT
+	kind_ = 'm';
+#endif
 }
 
 RanDraw::RanDraw(const uint64_t &seed) {
-	rng_  = new GenerateMT(seed);
+	rng_  = std::make_unique<GenerateMT>(seed);
 	kind_ = 'm';
+}
+
+RanDraw::RanDraw(RanDraw &&old) {
+	*this = std::move(old);
+}
+
+RanDraw & RanDraw::operator= (RanDraw &&old) {
+	if (this != &old){
+		rng_  = std::move(old.rng_);
+		kind_ = old.kind_;
+	}
+	return *this;
 }
 
 uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) const {
 	if (min >= max){
-		throw string("Lower bound not smaller than upper bound");
+		throw std::string("Lower bound not smaller than upper bound");
 	}
-	return min + this->ranInt() % (max - min);
+	return min + rng_->ranInt() % (max - min);
 }
 
-vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N){
-	vector<uint64_t> out(N);
-	for (uint64_t k = 0; k < N; ++k){
-		out[k] = k;
-	}
+std::vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N) {
+	std::vector<uint64_t> out(N);
+	std::iota(out.begin(), out.end(), 0);
 	for (uint64_t i = N - 1; i > 0; --i){
 		uint64_t j = this->sampleInt(i + 1); // sampleInt(n) samples i < n
 		// the three XORs trick to swap two integers
@@ -293,7 +285,7 @@ vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N){
 	return out; // relying on copy elision
 }
 
-double RanDraw::runifnz() const {
+double RanDraw::runifnz() const noexcept {
 	double rnz = 0.0;
 	do {
 		rnz = this->runif();
@@ -302,7 +294,7 @@ double RanDraw::runifnz() const {
 	return rnz;
 }
 
-double RanDraw::runifno() const {
+double RanDraw::runifno() const noexcept {
 	double rno = 0.0;
 	do {
 		rno = this->runif();
@@ -311,7 +303,7 @@ double RanDraw::runifno() const {
 	return rno;
 }
 
-double RanDraw::runifop() const {
+double RanDraw::runifop() const noexcept {
 	double rno = 0.0;
 	do {
 		rno = this->runif();
@@ -320,7 +312,7 @@ double RanDraw::runifop() const {
 	return rno;
 }
 
-double RanDraw::rnorm() const {
+double RanDraw::rnorm() const noexcept {
 	double x;
 	double sign;
 	uint64_t i;
@@ -354,7 +346,7 @@ double RanDraw::rnorm() const {
 	return sign * x;
 }
 
-double RanDraw::rgamma(const double &alpha) const {
+double RanDraw::rgamma(const double &alpha) const noexcept {
 	if (alpha <= 0.0){
 		return nan("");
 	}
@@ -385,7 +377,7 @@ double RanDraw::rgamma(const double &alpha) const {
 	return d * v;
 }
 
-void RanDraw::rdirichlet(const vector<double> &alpha, vector<double> &p) const {
+void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &p) const {
 #ifndef PKG_DEBUG_OFF
 	if ( alpha.size() != p.size() ){
 		throw std::string("ERROR: length of alpha vector not the same as length of p vector in RanDraw::rdirichlet()");
@@ -401,7 +393,7 @@ void RanDraw::rdirichlet(const vector<double> &alpha, vector<double> &p) const {
 	}
 }
 
-uint64_t RanDraw::vitterA(const double &n, const double &N) const {
+uint64_t RanDraw::vitterA(const double &n, const double &N) const noexcept {
 	// The notation follows Vitter's (1987) as closely as possible
 	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
 	uint64_t S  = 0;
@@ -414,9 +406,9 @@ uint64_t RanDraw::vitterA(const double &n, const double &N) const {
 		return S;
 	} else if (n == 1){
 		do {
-			S = static_cast<uint64_t>(floor(N * this->runif()));
+			S = static_cast<uint64_t>( floor( N * this->runif() ) );
 
-		} while (S == static_cast<uint64_t>(N)); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
+		} while ( S == static_cast<uint64_t>(N) ); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
 		return S;
 	}
 	// [0,1) uniform
@@ -426,16 +418,16 @@ uint64_t RanDraw::vitterA(const double &n, const double &N) const {
 
 	double Nloc = N;
 	while (quot > v){
-		S++;
-		top--;
-		Nloc--;
-		quot = quot*top / Nloc;
+		++S;
+		--top;
+		--Nloc;
+		quot = quot * top / Nloc;
 	}
 
 	return S;
 }
 
-uint64_t RanDraw::vitter(const double &n, const double &N) const {
+uint64_t RanDraw::vitter(const double &n, const double &N) const noexcept {
 	// The notation follows Vitter's (1987) as closely as possible
 	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
 	uint64_t S = 0;
@@ -444,9 +436,9 @@ uint64_t RanDraw::vitter(const double &n, const double &N) const {
 		return this->vitterA(n, N);
 	} else if (n == 1){ // trivial case
 		do {
-			S = static_cast<uint64_t>(floor(N * this->runif()));
+			S = static_cast<uint64_t>( floor( N * this->runif() ) );
 
-		} while (S == static_cast<uint64_t>(N)); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
+		} while ( S == static_cast<uint64_t>(N) ); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
 		return S;
 
 	}
@@ -496,8 +488,8 @@ uint64_t RanDraw::vitter(const double &n, const double &N) const {
 		// calculate f(|_X_|)
 		for (double t = N - 1.0; t >= limit; --t){
 			y2 = y2 * top / bottom;
-			top--;
-			bottom--;
+			--top;
+			--bottom;
 		}
 		if ( N / (N - X) >= y1 * pow(y2, nMin1inv) ){ // Accept D4 condition
 			break;

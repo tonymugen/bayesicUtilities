@@ -30,13 +30,11 @@
 #ifndef random_hpp
 #define random_hpp
 
-#include <cstdint>
 #include <string>
 #include <cmath>
 #include <vector>
-
-using std::string;
-using std::vector;
+#include <array>
+#include <memory>
 
 namespace BayesicSpace {
 	class RanDraw;
@@ -56,25 +54,25 @@ namespace BayesicSpace {
 		 *
 		 * \return random or pseudo-random 64-bit unsigned integer
 		 */
-		virtual uint64_t ranInt() const = 0;
+		virtual uint64_t ranInt() noexcept = 0;
 	protected:
 		/** \brief Protected default constructor */
 		Generate(){};
-		/** \brief Protected copy constructor
+		/** \brief Protected copy constructor (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		Generate(const Generate &old) = default;
+		Generate(const Generate &old) = delete;
 		/** \brief Protected move constructor
 		 *
 		 * \param[in] old object to move
 		 */
 		Generate(Generate &&old) = default;
-		/** \brief Protected copy assignment operator
+		/** \brief Protected copy assignment operator (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		Generate & operator= (const Generate &old) = default;
+		Generate & operator= (const Generate &old) = delete;
 		/** \brief Protected move assignment
 		 *
 		 * \param[in] old object to move
@@ -93,21 +91,21 @@ namespace BayesicSpace {
 		GenerateHR(){};
 		/** \brief Destructor */
 		~GenerateHR(){};
-		/** \brief Copy constructor
+		/** \brief Copy constructor (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		GenerateHR(const GenerateHR &old) = default;
+		GenerateHR(const GenerateHR &old) = delete;
 		/** \brief Move constructor
 		 *
 		 * \param[in] old object to move
 		 */
 		GenerateHR(GenerateHR &&old) = default;
-		/** \brief Copy assignment operator
+		/** \brief Copy assignment operator (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		GenerateHR & operator= (const GenerateHR &old) = default;
+		GenerateHR & operator= (const GenerateHR &old) = delete;
 		/** \brief Move assignment
 		 *
 		 * \param[in] old object to move
@@ -120,7 +118,7 @@ namespace BayesicSpace {
 		 *
 		 * \return digital random 64-bit unsigned integer
 		 */
-		uint64_t ranInt() const override;
+		uint64_t ranInt() noexcept override;
 	protected:
 		// no protected members
 	};
@@ -143,33 +141,33 @@ namespace BayesicSpace {
 		GenerateMT(const uint64_t &seed);
 		/** \brief Protected destructor */
 		~GenerateMT(){};
-		/** \brief Copy constructor
+		/** \brief Copy constructor (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		GenerateMT(const GenerateMT &old) = default;
+		GenerateMT(const GenerateMT &old) = delete;
 		/** \brief Move constructor
 		 *
 		 * \param[in] old object to move
 		 */
-		GenerateMT(GenerateMT &&old) = default;
-		/** \brief Copy assignment operator
+		GenerateMT(GenerateMT &&old);
+		/** \brief Copy assignment operator (deleted)
 		 *
 		 * \param[in] old object to copy
 		 */
-		GenerateMT & operator= (const GenerateMT &old) = default;
+		GenerateMT & operator= (const GenerateMT &old) = delete;
 		/** \brief Move assignment
 		 *
 		 * \param[in] old object to move
 		 */
-		GenerateMT & operator= (GenerateMT &&old) = default;
+		GenerateMT & operator= (GenerateMT &&old);
 
 		/** \brief Generate a pseudo-random 64-bit unsigned integer
 		 *
 		 *
 		 * \return pseudo-random 64-bit unsigned integer
 		 */
-		uint64_t ranInt() const override;
+		uint64_t ranInt() noexcept override;
 	protected:
 		/** \brief Degree of recurrence */
 		static const uint16_t n_;
@@ -194,13 +192,13 @@ namespace BayesicSpace {
 		/** \brief Tempering shift */
 		static const uint32_t u_;
 		/** \brief Array of alternative values for the twist */
-		static const uint64_t alt_[2];
+		static const std::array<uint64_t, 2> alt_;
 		/** \brief Generator state array */
-		mutable uint64_t mt_[312];
+		std::array<uint64_t, 312> mt_;
 		/** \brief State of the array index */
-		mutable size_t mti_;
+		size_t mti_;
 		/** \brief Current state */
-		mutable uint64_t x_;
+		uint64_t x_;
 	};
 
 	/** \brief Random number generating class
@@ -224,46 +222,46 @@ namespace BayesicSpace {
 		 */
 		RanDraw(const uint64_t &seed);
 		/** \brief Destructor */
-		~RanDraw(){ delete rng_; };
-		/** \brief Copy constructor
+		~RanDraw(){ };
+		/** \brief Copy constructor (deleted)
 		 *
 		 * \param[in] old object to be copied
 		 */
-		RanDraw(const RanDraw &old) = default;
+		RanDraw(const RanDraw &old) = delete;
 		/** \brief Move constructor
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw(RanDraw &&old) = default;
+		RanDraw(RanDraw &&old);
 
-		/** \brief Copy assignment
+		/** \brief Copy assignment (deleted)
 		 *
 		 * \param[in] old object to be copied
 		 */
-		RanDraw & operator= (const RanDraw &old) = default;
+		RanDraw & operator= (const RanDraw &old) = delete;
 		/** \brief Move assignment
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw & operator= (RanDraw &&old) = default;
+		RanDraw & operator= (RanDraw &&old);
 		/** \brief Query RNG kind
 		 *
 		 * Find out the kind of (P)RNG in use.
 		 *
 		 * \return String reflecting the RNG type
 		 */
-		string type() const {return kind_ == 'h' ? "hardware" : "mersenne_twister"; };
+		std::string type() const {return kind_ == 'h' ? "hardware" : "mersenne_twister"; };
 		/** \brief Generate random integer
 		 *
 		 * \return An unsigned random 64-bit integer
 		 */
-		uint64_t ranInt() const { return rng_->ranInt(); };
+		uint64_t ranInt() const noexcept { return rng_->ranInt(); };
 		/** \brief Sample and integer from the \f$ [0, n) \f$ interval
 		 *
 		 * \param[in] max the maximal value \f$n\f$ (does not appear in the sample)
 		 * \return sampled value
 		 */
-		uint64_t sampleInt(const uint64_t &max) const { return this->ranInt()%max; };
+		uint64_t sampleInt(const uint64_t &max) const noexcept { return rng_->ranInt() % max; };
 		/** \brief Sample and integer from the \f$ [m, n) \f$ interval
 		 *
 		 * Throws `string` "Lower bound not smaller than upper bound" if \f$ m \ge n \f$.
@@ -281,35 +279,35 @@ namespace BayesicSpace {
 		 *
 		 * \return vector of \f$ N \f$ shuffled integers
 		 */
-		vector<uint64_t> shuffleUint(const uint64_t &N);
+		std::vector<uint64_t> shuffleUint(const uint64_t &N);
 
 		/** \brief Generate a uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U[0,1]\f$ distribution
 		 */
-		double runif() const {return 5.42101086242752217E-20*static_cast<double>(rng_->ranInt()); };
+		double runif() const noexcept {return 5.42101086242752217E-20 * static_cast<double>( rng_->ranInt() ); };
 		/** \brief Generate a non-zero uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1]\f$ distribution
 		 */
-		double runifnz() const;
+		double runifnz() const noexcept;
 		/** \brief Generate a non-one uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U[0,1)\f$ distribution
 		 */
-		double runifno() const;
+		double runifno() const noexcept;
 		/** \brief Generate an open-interval uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1)\f$ distribution
 		 */
-		double runifop() const;
+		double runifop() const noexcept;
 		/** \brief A standard Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma = 1.0 \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
 		 *
 		 * \return a sample from the standard Gaussian distribution
 		 */
-		double rnorm() const;
+		double rnorm() const noexcept;
 		/** \brief A zero-mean Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -317,7 +315,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the zero-mean Gaussian distribution
 		 */
-		double rnorm(const double &sigma) const { return (this->rnorm())*sigma;};
+		double rnorm(const double &sigma) const noexcept { return ( this->rnorm() ) * sigma; };
 		/** \brief A Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu \f$ and standard deviation \f$ \sigma \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -326,7 +324,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the Gaussian distribution
 		 */
-		double rnorm(const double &mu, const double &sigma) const { return mu + (this->rnorm())*sigma;};
+		double rnorm(const double &mu, const double &sigma) const noexcept { return mu + ( this->rnorm() ) * sigma; };
 		/** \brief A standard Gamma deviate
 		 *
 		 * Generates a Gamma random variable with shape \f$ \alpha > 0 \f$ and standard scale \f$ \beta = 1.0 \f$. Implements the Marsaglia and Tsang (2000) method.
@@ -334,7 +332,7 @@ namespace BayesicSpace {
 		 * \param[in] alpha shape parameter \f$ \alpha \f$
 		 * \return a sample from the standard Gamma distribution
 		 */
-		double rgamma(const double &alpha) const;
+		double rgamma(const double &alpha) const noexcept;
 		/** \brief A general Gamma deviate
 		 *
 		 * Generates a Gamma random variable with shape \f$ \alpha > 0 \f$ and scale \f$ \beta > 0 \f$.
@@ -343,7 +341,7 @@ namespace BayesicSpace {
 		 * \param[in] beta scale parameter \f$ \beta \f$
 		 * \return a sample from the general Gamma distribution
 		 */
-		double rgamma(const double &alpha, const double &beta) const { return beta > 0.0 ? ( this->rgamma(alpha) )/beta : nan(""); };
+		double rgamma(const double &alpha, const double &beta) const noexcept { return beta > 0.0 ? ( this->rgamma(alpha) ) / beta : nan(""); };
 		/** \brief A Dirichlet deviate
 		 *
 		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
@@ -351,7 +349,7 @@ namespace BayesicSpace {
 		 * \param[in] alpha vector of concentration parameters
 		 * \param[out] p vector of probabilities, must be the same length as \f$ \alpha \f$.
 		 */
-		void rdirichlet(const vector<double> &alpha, vector<double> &p) const;
+		void rdirichlet(const std::vector<double> &alpha, std::vector<double> &p) const;
 		/** \brief A chi-square deviate
 		 *
 		 * Generates a \f$ \chi^2 \f$ random variable with degrees of freedom \f$ \nu > 0.0 \f$.
@@ -359,7 +357,7 @@ namespace BayesicSpace {
 		 * \param[in] nu degrees of freedom
 		 * \return a sample from the \f$ \chi^2 \f$ distribution
 		 */
-		double rchisq(const double &nu) const { return 2.0*this->rgamma(nu/2.0); };
+		double rchisq(const double &nu) const noexcept { return 2.0*this->rgamma(nu/2.0); };
 		/** \brief Sample from Vitter's distribution, method A
 		 *
 		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over. This function implements Vitter's \cite vitter84a \cite vitter87a method A. It is useful for online one-pass sampling of records from a file.
@@ -370,7 +368,7 @@ namespace BayesicSpace {
 		 *
 		 * \return the number of records to skip
 		 */
-		uint64_t vitterA(const double &n, const double &N) const;
+		uint64_t vitterA(const double &n, const double &N) const noexcept;
 		/** \brief Sample from Vitter's distribution, method D
 		 *
 		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over. This function implements Vitter's \cite vitter84a \cite vitter87a method D. It is useful for online one-pass sampling of records from a file.
@@ -381,10 +379,10 @@ namespace BayesicSpace {
 		 *
 		 * \return the number of records to skip
 		 */
-		uint64_t vitter(const double &n, const double &N) const;
+		uint64_t vitter(const double &n, const double &N) const noexcept;
 	private:
 		/** \brief (Pseudo-)random number generator */
-		Generate *rng_;
+		std::unique_ptr<Generate> rng_;
 		/** \brief Which generator
 		 *
 		 * Set to "h" if the hardware generator is supported, "m" is had to use the MT.
@@ -397,18 +395,18 @@ namespace BayesicSpace {
 		static const double paramR_;
 
 		/** \brief Tabulated values for the height of the ziggurat levels */
-		static const double ytab_[128];
+		static const std::array<double, 128> ytab_;
 		/** \brief Tabulated \f$2^{24} \times x_i/x_{i+1}\f$ values
 		 *
 		 * Used for the Gaussian ziggurat algorithm.
 		 */
-		static const uint64_t ktab_[128];
+		static const std::array<uint64_t, 128> ktab_;
 
 		/** \brief Tabulated \f$2^{-24} \times x_i \f$ values
 		 *
 		 * Used for the Gaussian ziggurat algorithm.
 		 */
-		static const double wtab_[128];
+		static const std::array<double, 128> wtab_;
 	};
 
 }
