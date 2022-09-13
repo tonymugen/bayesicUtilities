@@ -55,6 +55,12 @@ namespace BayesicSpace {
 		 * \return random or pseudo-random 64-bit unsigned integer
 		 */
 		virtual uint64_t ranInt() noexcept = 0;
+		/** \brief Generate a (pseudo-)random 64-bit unsigned integer
+		 *
+		 * \param[out] ranInt (pseudo-)ranom number
+		 * \return (P)RNG status report
+		 */
+		virtual int32_t ranInt(uint64_t &ranInt) noexcept = 0;
 	protected:
 		/** \brief Protected default constructor */
 		Generate(){};
@@ -114,11 +120,21 @@ namespace BayesicSpace {
 
 		/** \brief Generate a random 64-bit unsigned integer
 		 *
-		 * Monitors the health of the CPU random number generator and throws a `string` object "RDRAND_failed" if a failure is detected after ten tries.
+		 * Health of the RNG not checked to increase efficiency.
+		 * Extensive testing has not revealed any instances of RNG failure in practice.
 		 *
 		 * \return digital random 64-bit unsigned integer
 		 */
 		uint64_t ranInt() noexcept override;
+		/** \brief Generate a random 64-bit unsigned integer with health check
+		 *
+		 * RNG generation success returns 1, failure returns 0.
+		 * In case of failure, the random number value cannot be trusted (should be 0).
+		 *
+		 * \param[out] ranInt random number
+		 * \return RNG status report
+		 */
+		int32_t ranInt(uint64_t &ranInt) noexcept override;
 	protected:
 		// no protected members
 	};
@@ -168,6 +184,14 @@ namespace BayesicSpace {
 		 * \return pseudo-random 64-bit unsigned integer
 		 */
 		uint64_t ranInt() noexcept override;
+		/** \brief Generate a pseudo-random 64-bit unsigned integer with health check
+		 *
+		 * Health check always returns 1 at moment and can be ignored.
+		 *
+		 * \param[out] ranInt pseudo-random number
+		 * \return PRNG status report
+		 */
+		int32_t ranInt(uint64_t &ranInt) noexcept override;
 	protected:
 		/** \brief Degree of recurrence */
 		static const uint16_t n_;

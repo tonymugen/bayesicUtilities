@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Anthony J. Greenberg
+ * Copyright (c) 2022 Anthony J. Greenberg
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
@@ -20,7 +20,7 @@
 /// Random number generation
 /** \file
  * \author Anthony J. Greenberg
- * \copyright Copyright (c) 2017 Anthony J. Greenberg
+ * \copyright Copyright (c) 2017 -- 2022 Anthony J. Greenberg
  * \version 1.0
  *
  * Class implementation for facilities that generate random draws from various distributions.
@@ -42,12 +42,16 @@ using namespace BayesicSpace;
 // GenerateHR methods
 uint64_t GenerateHR::ranInt() noexcept {
 	unsigned long long rInt;
-	// this can be in infinite loop if the random number pool is depleted
-	// but then we have more serious system-wide issues
-	while (_rdrand64_step(&rInt) == 0){
-	}
+	_rdrand64_step(&rInt);
 
 	return static_cast<uint64_t> (rInt);
+}
+
+int32_t GenerateHR::ranInt(uint64_t &ranInt) noexcept {
+	unsigned long long rInt;
+	const int32_t success = _rdrand64_step(&rInt);
+	ranInt                = static_cast<uint64_t>(rInt);
+	return success;
 }
 
 // GenerateMT static members
@@ -129,6 +133,11 @@ uint64_t GenerateMT::ranInt() noexcept {
 	x_ ^= (x_ >> l_);
 
 	return x_;
+}
+
+int32_t GenerateMT::ranInt(uint64_t &ranInt) noexcept {
+	ranInt = this->ranInt();
+	return 1;
 }
 
 // RanDraw static members
