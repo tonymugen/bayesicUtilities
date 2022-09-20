@@ -28,119 +28,29 @@
  */
 
 #include <array>
-#include <string>
 #include <vector>
 #include <cmath>
-#include <memory>
 #include <numeric>
-#include <immintrin.h>
+#include <cassert>
+
 
 #include "random.hpp"
 
 using namespace BayesicSpace;
 
-// GenerateHR methods
-uint64_t GenerateHR::ranInt() noexcept {
-	unsigned long long rInt;
-	_rdrand64_step(&rInt);
-
-	return static_cast<uint64_t> (rInt);
-}
-
-int32_t GenerateHR::ranInt(uint64_t &ranInt) noexcept {
-	unsigned long long rInt;
-	const int32_t success = _rdrand64_step(&rInt);
-	ranInt                = static_cast<uint64_t>(rInt);
-	return success;
-}
-
-// GenerateMT static members
-constexpr uint16_t GenerateMT::n_  = 312;
-constexpr uint16_t GenerateMT::m_  = 156;
-constexpr uint64_t GenerateMT::lm_ = static_cast<uint64_t>(0xFFFFFFFF80000000);
-constexpr uint64_t GenerateMT::um_ = static_cast<uint64_t>(0x7FFFFFFF);
-constexpr uint64_t GenerateMT::b_  = static_cast<uint64_t>(0x71D67FFFEDA60000);
-constexpr uint64_t GenerateMT::c_  = static_cast<uint64_t>(0xFFF7EEE000000000);
-constexpr uint64_t GenerateMT::d_  = static_cast<uint64_t>(0x5555555555555555);
-constexpr uint32_t GenerateMT::l_  = 43;
-constexpr uint32_t GenerateMT::s_  = 17;
-constexpr uint32_t GenerateMT::t_  = 37;
-constexpr uint32_t GenerateMT::u_  = 29;
-constexpr std::array<uint64_t, 2> GenerateMT::alt_{static_cast<uint64_t>(0), static_cast<uint64_t>(0xB5026F5AA96619E9)};
-
-//GenerateMT methods
-GenerateMT::GenerateMT() {
-	// start by using RDTSC to set the seed
-	const uint64_t seed = static_cast<uint64_t>( __rdtsc() );
-	const uint64_t f    = 6364136223846793005ULL;
-	mt_[0] = seed;
-	mti_   = 1;
-
-	for (; mti_ < n_; ++mti_){
-		mt_[mti_] = (f * (mt_[mti_ - 1] ^ (mt_[mti_ - 1] >> 62)) + mti_);
-	}
-}
-
-GenerateMT::GenerateMT(const uint64_t &seed) {
-	// start by using RDTSC to set the seed
-	uint32_t lo = 0;
-	uint32_t hi = 0;
-	uint64_t f  = 6364136223846793005ULL;
-	mt_[0]      = seed;
-	mti_        = 1;
-
-	for (; mti_ < n_; ++mti_){
-		mt_[mti_] = f * ( mt_[mti_ - 1] ^ (mt_[mti_ - 1] >> 62) ) + mti_;
-	}
-}
-
-GenerateMT::GenerateMT(GenerateMT &&old) {
-	*this = std::move(old);
-}
-
-GenerateMT & GenerateMT::operator= (GenerateMT &&old) {
-	if (this != &old){
-		mt_  = std::move(old.mt_);
-		mti_ = old.mti_;
-		x_   = old.x_;
-	}
-	return *this;
-}
-
-uint64_t GenerateMT::ranInt() noexcept {
-	if (mti_ == n_){ // do we need to re-run the twister?
-		size_t i = 0;
-		for (; i < n_ - m_; ++i){ // first _m words
-			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
-			mt_[i] = mt_[i + m_] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
-		}
-		for (; i < n_ - 1; ++i){ // rest, except for the last element
-			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
-			mt_[i] = mt_[i + (m_ - n_)] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
-		}
-		// now set the last element
-		x_          = (mt_[n_ - 1] & um_) | (mt_[0] & lm_);
-		mt_[n_ - 1] = mt_[m_ - 1] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
-
-		mti_ = 0;
-	}
-	// extract pseudo-random number
-	x_ = mt_[mti_++]; // increment AFTER using as an index
-
-	x_ ^= ( (x_ >> u_) & d_ );
-	x_ ^= ( (x_ << s_) & b_ );
-	x_ ^= ( (x_ << t_) & c_ );
-	x_ ^= (x_ >> l_);
-
-	return x_;
-}
-
-int32_t GenerateMT::ranInt(uint64_t &ranInt) noexcept {
-	ranInt = this->ranInt();
-	return 1;
-}
-
 // RanDraw static members
+constexpr uint16_t RanDraw::n_  = 312;
+constexpr uint16_t RanDraw::m_  = 156;
+constexpr uint64_t RanDraw::lm_ = static_cast<uint64_t>(0xFFFFFFFF80000000);
+constexpr uint64_t RanDraw::um_ = static_cast<uint64_t>(0x7FFFFFFF);
+constexpr uint64_t RanDraw::b_  = static_cast<uint64_t>(0x71D67FFFEDA60000);
+constexpr uint64_t RanDraw::c_  = static_cast<uint64_t>(0xFFF7EEE000000000);
+constexpr uint64_t RanDraw::d_  = static_cast<uint64_t>(0x5555555555555555);
+constexpr uint32_t RanDraw::l_  = 43;
+constexpr uint32_t RanDraw::s_  = 17;
+constexpr uint32_t RanDraw::t_  = 37;
+constexpr uint32_t RanDraw::u_  = 29;
+constexpr std::array<uint64_t, 2> RanDraw::alt_{static_cast<uint64_t>(0), static_cast<uint64_t>(0xB5026F5AA96619E9)};
 constexpr double RanDraw::paramR_ = 3.44428647676;
 constexpr std::array<double, 128> RanDraw::ytab_ = {
 	1.0, 0.963598623011, 0.936280813353, 0.913041104253,
@@ -245,19 +155,14 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 	1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
 
-RanDraw::RanDraw() {
-#ifdef _rdrand64_step
-	rng_  = std::make_unique<GenerateHR>(); // have hardware random numbers
-	kind_ = 'h';
-#else
-	rng_  = std::make_unique<GenerateMT>(); // use MT
-	kind_ = 'm';
-#endif
-}
-
 RanDraw::RanDraw(const uint64_t &seed) {
-	rng_  = std::make_unique<GenerateMT>(seed);
-	kind_ = 'm';
+	const uint64_t f = 6364136223846793005ULL;
+	mt_[0] = seed;
+	mti_   = 1;
+
+	for (; mti_ < n_; ++mti_){
+		mt_[mti_] = (f * (mt_[mti_ - 1] ^ (mt_[mti_ - 1] >> 62)) + mti_);
+	}
 }
 
 RanDraw::RanDraw(RanDraw &&old) {
@@ -266,17 +171,45 @@ RanDraw::RanDraw(RanDraw &&old) {
 
 RanDraw & RanDraw::operator= (RanDraw &&old) {
 	if (this != &old){
-		rng_  = std::move(old.rng_);
-		kind_ = old.kind_;
+		mt_  = std::move(old.mt_);
+		mti_ = old.mti_;
+		x_   = old.x_;
 	}
 	return *this;
 }
 
-uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) const {
-	if (min >= max){
-		throw std::string("Lower bound not smaller than upper bound");
+uint64_t RanDraw::ranInt() noexcept {
+	if (mti_ == n_){ // do we need to re-run the twister?
+		size_t i = 0;
+		for (; i < n_ - m_; ++i){ // first _m words
+			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
+			mt_[i] = mt_[i + m_] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
+		}
+		for (; i < n_ - 1; ++i){ // rest, except for the last element
+			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
+			mt_[i] = mt_[i + (m_ - n_)] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
+		}
+		// now set the last element
+		x_          = (mt_[n_ - 1] & um_) | (mt_[0] & lm_);
+		mt_[n_ - 1] = mt_[m_ - 1] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
+
+		mti_ = 0;
 	}
-	return min + rng_->ranInt() % (max - min);
+	// extract pseudo-random number
+	x_ = mt_[mti_++]; // increment AFTER using as an index
+
+	x_ ^= ( (x_ >> u_) & d_ );
+	x_ ^= ( (x_ << s_) & b_ );
+	x_ ^= ( (x_ << t_) & c_ );
+	x_ ^= (x_ >> l_);
+
+	return x_;
+}
+
+uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {
+	assert( (min < max) && "ERROR: Lower bound not smaller than upper bound in RanDraw::sampleInt()" );
+
+	return min + this->ranInt() % (max - min);
 }
 
 std::vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N) {
@@ -294,7 +227,7 @@ std::vector<uint64_t> RanDraw::shuffleUint(const uint64_t &N) {
 	return out; // relying on copy elision
 }
 
-double RanDraw::runifnz() const noexcept {
+double RanDraw::runifnz() noexcept {
 	double rnz = 0.0;
 	do {
 		rnz = this->runif();
@@ -303,7 +236,7 @@ double RanDraw::runifnz() const noexcept {
 	return rnz;
 }
 
-double RanDraw::runifno() const noexcept {
+double RanDraw::runifno() noexcept {
 	double rno = 0.0;
 	do {
 		rno = this->runif();
@@ -312,7 +245,7 @@ double RanDraw::runifno() const noexcept {
 	return rno;
 }
 
-double RanDraw::runifop() const noexcept {
+double RanDraw::runifop() noexcept {
 	double rno = 0.0;
 	do {
 		rno = this->runif();
@@ -321,15 +254,15 @@ double RanDraw::runifop() const noexcept {
 	return rno;
 }
 
-double RanDraw::rnorm() const noexcept {
+double RanDraw::rnorm() noexcept {
 	double x;
 	double sign;
 	uint64_t i;
 	uint64_t j;
 
 	while (1){
-		i = rng_->ranInt() & 255UL;      // choose the step
-		j = rng_->ranInt() % 16777216UL; // sample from 2^24
+		i = this->ranInt() & 255UL;      // choose the step
+		j = this->ranInt() % 16777216UL; // sample from 2^24
 
 		sign = (i & 0x80) ? 1.0 : -1.0;
 		i &= 0x7f; // convert i to [0, 127], an index into the ziggurat slices
@@ -355,7 +288,7 @@ double RanDraw::rnorm() const noexcept {
 	return sign * x;
 }
 
-double RanDraw::rgamma(const double &alpha) const noexcept {
+double RanDraw::rgamma(const double &alpha) noexcept {
 	if (alpha <= 0.0){
 		return nan("");
 	}
@@ -386,12 +319,9 @@ double RanDraw::rgamma(const double &alpha) const noexcept {
 	return d * v;
 }
 
-void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &p) const {
-#ifndef PKG_DEBUG_OFF
-	if ( alpha.size() != p.size() ){
-		throw std::string("ERROR: length of alpha vector not the same as length of p vector in RanDraw::rdirichlet()");
-	}
-#endif
+void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &p) noexcept {
+	assert( ( alpha.size() == p.size() ) && "ERROR: length of alpha vector not the same as length of p vector in RanDraw::rdirichlet()" );
+
 	double sum = 0.0;
 	for (size_t k = 0; k < alpha.size(); ++k){
 		p[k] = this->rgamma(alpha[k]);
@@ -402,7 +332,7 @@ void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &
 	}
 }
 
-uint64_t RanDraw::vitterA(const double &n, const double &N) const noexcept {
+uint64_t RanDraw::vitterA(const double &n, const double &N) noexcept {
 	// The notation follows Vitter's (1987) as closely as possible
 	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
 	uint64_t S  = 0;
@@ -436,7 +366,7 @@ uint64_t RanDraw::vitterA(const double &n, const double &N) const noexcept {
 	return S;
 }
 
-uint64_t RanDraw::vitter(const double &n, const double &N) const noexcept {
+uint64_t RanDraw::vitter(const double &n, const double &N) noexcept {
 	// The notation follows Vitter's (1987) as closely as possible
 	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
 	uint64_t S = 0;
