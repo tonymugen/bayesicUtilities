@@ -28,14 +28,12 @@
  */
 
 #include <fstream>
+#include <string>
 #include <vector>
 #include <algorithm>
+#include <cassert>
 
 #include "index.hpp"
-
-using std::ifstream;
-using std::move;
-using std::remove_if;
 
 using namespace BayesicSpace;
 
@@ -43,71 +41,71 @@ using namespace BayesicSpace;
  * Index methods
  */
 
-Index::Index(const size_t &Ngroups){
+Index::Index(const size_t &Ngroups) {
 	index_.resize(Ngroups);
 }
 
 Index::Index(const size_t *arr, const size_t &N) {
-	for (size_t elInd = 0; elInd < N; elInd++) {
+	for (size_t elInd = 0; elInd < N; ++elInd){
 		groupVal_.push_back(arr[elInd]);
-		if (arr[elInd] >= index_.size()) {
-			index_.resize(arr[elInd]+1); // maybe this groupID is a few steps ahead of the current
-			index_[arr[elInd]].push_back(elInd);
+		if ( arr[elInd] >= index_.size() ){
+			index_.resize(arr[elInd] + 1);           // maybe this groupID is a few steps ahead of the current
+			index_[ arr[elInd] ].push_back(elInd);
 		}
 		else {
-			index_[arr[elInd]].push_back(elInd);
+			index_[ arr[elInd] ].push_back(elInd);
 		}
 
 	}
 	// now remove all empty elements from index_
 	index_.erase(
 		remove_if(
-			index_.begin(), index_.end(), [](const vector<size_t> &v){return v.empty();}
+			index_.begin(), index_.end(), [](const std::vector<size_t> &v){return v.empty();}
 				),
 		index_.end()
 	);
 }
 
-Index::Index(const vector<size_t> &vec) {
-	for (size_t elInd = 0; elInd < vec.size(); elInd++) { // need the element indexes so use that instead of an iterator
+Index::Index(const std::vector<size_t> &vec) {
+	for (size_t elInd = 0; elInd < vec.size(); ++elInd){ // need the element indexes so use that instead of an iterator
 		groupVal_.push_back(vec[elInd]);
-		if (vec[elInd] >= index_.size()) {
-			index_.resize(vec[elInd]+1); // maybe this groupID is a few steps ahead of the current
-			index_[vec[elInd]].push_back(elInd);
+		if ( vec[elInd] >= index_.size() ){
+			index_.resize(vec[elInd] + 1); // maybe this groupID is a few steps ahead of the current
+			index_[ vec[elInd] ].push_back(elInd);
 		}
 		else {
-			index_[vec[elInd]].push_back(elInd);
+			index_[ vec[elInd] ].push_back(elInd);
 		}
 	}
 	// now remove all empty elements from index_
 	index_.erase(
-		remove_if(
-			index_.begin(), index_.end(), [](const vector<size_t> &v){return v.empty();}
+		std::remove_if(
+			index_.begin(), index_.end(), [](const std::vector<size_t> &v){return v.empty();}
 				),
 		index_.end()
 	);
 }
 
-Index::Index(const string &inFileName){
-	ifstream idxFl(inFileName.c_str());
-	string error;
+Index::Index(const std::string &inFileName) {
+	std::ifstream idxFl( inFileName.c_str() );
+	std::string error;
 
 	if (!idxFl) {
-		error = "Cannot open file " + inFileName;
+		error = std::string("ERROR: Cannot open file ") + inFileName + std::string(" in ") + std::string(__FUNCTION__);
 		throw error;
 	}
 	int tmpIn;
 	size_t iEl = 0;
-	while (idxFl >> tmpIn) {
-		if (tmpIn < 0) {
-			error = "Negative group ID";
+	while (idxFl >> tmpIn){
+		if (tmpIn < 0){
+			error = std::string("ERROR: Negative group ID in ") + std::string(__FUNCTION__);
 			throw error;
 		}
 		groupVal_.push_back(tmpIn);
-		if (static_cast<size_t>(tmpIn) >= index_.size()) {
-			index_.resize(tmpIn+1); // maybe this goupID is a few steps ahead of the current
+		if ( static_cast<size_t>(tmpIn) >= index_.size() ){
+			index_.resize(tmpIn + 1);                       // maybe this goupID is a few steps ahead of the current
 			index_[tmpIn].push_back(iEl);
-			iEl++;
+			++iEl;
 		}
 		else {
 			index_[tmpIn].push_back(iEl);
@@ -116,52 +114,54 @@ Index::Index(const string &inFileName){
 	}
 	// now remove all empty elements from index_
 	index_.erase(
-		remove_if(
-			index_.begin(), index_.end(), [](const vector<size_t> &v){return v.empty();}
+		std::remove_if(
+			index_.begin(), index_.end(), [](const std::vector<size_t> &v){return v.empty();}
 				),
 		index_.end()
 	);
 }
 
+Index::Index(const Index &in) {
+	*this = in;
+}
+
 Index & Index::operator=(const Index &in) {
-	if (&in == this) {
-		return *this;
+	if (&in != this){
+		index_    = in.index_;
+		groupVal_ = in.groupVal_;
 	}
-	index_    = in.index_;
-	groupVal_ = in.groupVal_;
 	return *this;
 }
 
-Index & Index::operator=(Index &&in){
-	if (&in == this) {
-		return *this;
-	}
-	index_    = move(in.index_);
-	groupVal_ = move(in.groupVal_);
+Index::Index(Index &&in) noexcept {
+	*this = std::move(in);
+}
 
+Index & Index::operator=(Index &&in) noexcept {
+	if (&in != this){
+		index_    = move(in.index_);
+		groupVal_ = move(in.groupVal_);
+	}
 	return *this;
 }
 
 size_t Index::neGroupNumber() const {
 	size_t neGN = 0;
-	for (auto &g : index_) {
-		if ( g.size() ) {
-			neGN++;
+	for (auto &g : index_){
+		if ( g.size() ){
+			++neGN;
 		}
 	}
 	return neGN;
 }
 
-void Index::update(const vector<size_t> &newVec){
-	for (auto &vec : index_) {
+void Index::update(const std::vector<size_t> &newVec) {
+	for (auto &vec : index_){
 		vec.clear();
 	}
-	for (size_t elInd = 0; elInd < newVec.size(); elInd++) {
-		if (newVec[elInd] >= index_.size()) {
-			throw string("ERROR: updating vector has an extra group ID in Index::update()");
-		} else {
-			index_[newVec[elInd]].push_back(elInd);
-		}
+	for (size_t elInd = 0; elInd < newVec.size(); elInd++){
+		assert( ( newVec[elInd] < index_.size() ) && "ERROR: updating vector has an extra group ID in Index::update()" );
+		index_[ newVec[elInd] ].push_back(elInd);
 	}
 	groupVal_ = newVec;
 }

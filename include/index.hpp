@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Anthony J. Greenberg
+ * Copyright (c) 2022 Anthony J. Greenberg
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
@@ -20,21 +20,17 @@
 /// Connect lines with groups
 /** \file
  * \author Anthony J. Greenberg
- * \copyright Copyright (c) 2017 Anthony J. Greenberg
+ * \copyright Copyright (c) 2017 -- 2022 Anthony J. Greenberg
  * \version 1.0
  *
  * Definitions and interface documentation for a class that relates individuals to groups, similar to an factor in R.
  *
  */
 
-#ifndef index_hpp
-#define index_hpp
+#pragma once
 
 #include <vector>
 #include <string>
-
-using std::vector;
-using std::string;
 
 namespace BayesicSpace {
 	/** \brief Group index
@@ -67,7 +63,7 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] vec array of group IDs
 		 */
-		Index(const vector<size_t> &vec);
+		Index(const std::vector<size_t> &vec);
 		/** \brief File read constructor
 		 *
 		 * The input file has an entry for each line (separated by white space), and the value of that entry is the base-0 group ID.
@@ -75,13 +71,13 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] inFileName input file name
 		 */
-		Index(const string &inFileName);
+		Index(const std::string &inFileName);
 		/** \brief Copy constructor
 		 *
 		 * \param[in] in `Index` to be copied
 		 * \return `Index` object
 		 */
-		Index(const Index &in) : index_{in.index_}, groupVal_{in.groupVal_} {};
+		Index(const Index &in);
 		/** \brief Copy assignment operator
 		 *
 		 * \param[in] in object to be copied
@@ -93,13 +89,13 @@ namespace BayesicSpace {
 		 * \param[in] in `Index` object to be moved
 		 * \return `Index` object
 		 */
-		Index(Index &&in) : index_{move(in.index_)}, groupVal_{move(in.groupVal_)} {};
+		Index(Index &&in) noexcept;
 		/** \brief Move assignment operator
 		 *
 		 * \param[in] in object to be moved
 		 * \return an `Index` object
 		 */
-		Index &operator=(Index &&in);
+		Index &operator=(Index &&in) noexcept;
 		/** \brief Destructor */
 		~Index(){};
 
@@ -110,7 +106,7 @@ namespace BayesicSpace {
 		 * \param[in] i group index
 		 * \return index of line IDs
 		 */
-		const vector<size_t> & operator[] (const size_t &i) const { return index_[i]; };
+		const std::vector<size_t> & operator[] (const size_t &i) const { return index_[i]; };
 
 		/** \brief Group size
 		 *
@@ -154,22 +150,21 @@ namespace BayesicSpace {
 		 * \param[in] newVec new vector of group IDs
 		 *
 		 */
-		void update(const vector<size_t> &newVec);
+		void update(const std::vector<size_t> &newVec);
 
 	private:
 		/** \brief Vector of index vectors
 		 *
 		 * The outside vector is the same length as the number of groups. Each inside vector has the line indexes.
 		 */
-		vector< vector<size_t> > index_;
+		std::vector< std::vector<size_t> > index_;
 		/** \brief Vector of group IDs
 		 *
 		 * Each element of the vector stores the corresponding (base-0) group ID.
 		 */
-		vector<size_t> groupVal_;
+		std::vector<size_t> groupVal_;
 
 	};
 
 }
 
-#endif /* index_hpp */

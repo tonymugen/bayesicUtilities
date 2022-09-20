@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Anthony J. Greenberg
+ * Copyright (c) 2022 Anthony J. Greenberg
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
@@ -20,20 +20,19 @@
 /// Numerical utilities
 /** \file
  * \author Anthony J. Greenberg
- * \copyright Copyright (c) 2020 Anthony J. Greenberg
+ * \copyright Copyright (c) 2020 -- 2022 Anthony J. Greenberg
  * \version 1.0
  *
  * Class definition for a set of numerical utilities.
  * Implemented as a class because this seems to be the only way for these methods to be included using Rcpp with no compilation errors.
  *
  */
-#ifndef utilities_hpp
-#define utilities_hpp
+
+#pragma once
 
 #include <math.h>
 #include <vector>
 
-using std::vector;
 namespace BayesicSpace {
 	/** \brief Numerical utilities collection
 	 *
@@ -86,14 +85,14 @@ namespace BayesicSpace {
 	 * \param[in] v vector
 	 * \return dot-product value
 	 */
-	double dotProd(const vector<double> &v) const;
+	double dotProd(const std::vector<double> &v) const;
 	/** \brief Dot-product of two vectors
 	 *
 	 * \param[in] v1 vector 1
 	 * \param[in] v2 vector 2
 	 * \return dot-product value
 	 */
-	double dotProd(const vector<double> &v1, const vector<double> &v2) const;
+	double dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const;
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
@@ -127,4 +126,3 @@ namespace BayesicSpace {
 	};
 }
 
-#endif // utilities_hpp

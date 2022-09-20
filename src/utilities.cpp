@@ -33,14 +33,11 @@
 #include <cmath>
 #include <string>
 #include <limits>
+#include <cassert>
 
 #include "utilities.hpp"
 
 using namespace BayesicSpace;
-using std::vector;
-using std::string;
-using std::to_string;
-using std::numeric_limits;
 
 const double NumerUtil::gCoeff_[14] {
 	57.1562356658629235,     59.5979603554754912,
@@ -107,7 +104,9 @@ double NumerUtil::lnGamma(const double &x) const{
 	return tmp + log(cZero / x);
 }
 double NumerUtil::digamma(const double &x) const{
+#ifndef NDEBUG
 	const int32_t nMax = 100;
+#endif
 	if (x <= 0.0){
 		return nan("");
 	}
@@ -116,12 +115,12 @@ double NumerUtil::digamma(const double &x) const{
 	}
 	// very large x
 	double xln = log(x);
-	double lrg = 1.0 / ( 2.0 * numeric_limits<double>::epsilon() );
+	double lrg = 1.0 / ( 2.0 * std::numeric_limits<double>::epsilon() );
 	if(x * xln > lrg) {
 		return xln;
 	}
-	const int32_t n    = (-numeric_limits<double>::min_exponent < numeric_limits<double>::max_exponent ? -numeric_limits<double>::min_exponent : numeric_limits<double>::max_exponent);
-	const double r1m4  = 0.5 * numeric_limits<double>::epsilon();
+	const int32_t n    = (-std::numeric_limits<double>::min_exponent < std::numeric_limits<double>::max_exponent ? -std::numeric_limits<double>::min_exponent : std::numeric_limits<double>::max_exponent);
+	const double r1m4  = 0.5 * std::numeric_limits<double>::epsilon();
 	const double r1m5  = 0.301029995663981195213738894724;            // log_10(2)
 	const double wdtol = (r1m4 > 0.5e-18 ? r1m4 : 0.5e-18);
 	const double elim  = 2.302 * (static_cast<double>(n) * r1m5 - 3.0);  // = 700.6174...
@@ -133,25 +132,23 @@ double NumerUtil::digamma(const double &x) const{
 	}
 
 	// regular calculations
-	double rln   = r1m5 * static_cast<double>(numeric_limits<double>::digits);
+	double rln   = r1m5 * static_cast<double>(std::numeric_limits<double>::digits);
 	rln          = (rln < 18.06 ? rln : 18.06);
 	double fln   = (rln > 3.0 ? rln-3.0 : 0.0);
-	if (fln < 0.0){
-		throw string("ERROR: fln value ") + to_string(fln) + string(" less than 0 in locDigamma()");
-	}
+	assert( (fln >= 0.0) && "ERROR: fln value less than 0 in locDigamma()" );
 	const double fn   = 3.50 + 0.40 * fln;
 	const double xmin = ceil(fn);
 	double xdmy       = x;
 	double xdmln      = xln;
 	double xinc       = 0.0;
-	if (x < xmin) {
+	if (x < xmin){
 		xinc  = xmin - floor(x);
 		xdmy  = x + xinc;
 		xdmln = log(xdmy);
 	}
 
-	double tk     = 2.0 * xdmln;
-	if (tk <= elim) { // for x not large
+	double tk = 2.0 * xdmln;
+	if (tk <= elim){ // for x not large
 		double t1   = 0.5 / xdmy;
 		double tst  = wdtol*t1;
 		double rxsq = 1.0 / (xdmy * xdmy);
@@ -159,10 +156,10 @@ double NumerUtil::digamma(const double &x) const{
 		double s    = t * bvalues_[2];
 		if (fabs(s) >= tst) {
 			tk = 2.0;
-			for(uint16_t k = 4; k <= 22; k++) {
+			for(uint16_t k = 4; k <= 22; ++k){
 				t         *= ( (tk + 1.0) / (tk + 1.0) ) * ( tk / (tk + 2.0) ) * rxsq;
 				double tmp = t * bvalues_[k-1];
-				if (fabs(tmp) < tst) {
+				if (fabs(tmp) < tst){
 					break;
 				}
 				s += tmp;
@@ -173,10 +170,8 @@ double NumerUtil::digamma(const double &x) const{
 		if (xinc > 0.0) {
 			// backward recursion from xdmy to x
 			int32_t nx = static_cast<int32_t>(xinc);
-			if (nx > nMax) {
-				throw string("Increment ") + to_string(nx) + string(" too large in locDigamma()");
-			}
-			for(int32_t i = 1; i <= nx; i++){
+			assert( (nx <= nMax) && "Increment nx too large in locDigamma()" );
+			for(int32_t i = 1; i <= nx; ++i){
 				s += 1.0 / ( x + static_cast<double>(nx - i) ); // avoid disastrous cancellation, according to the comment in the R code
 			}
 		}
@@ -184,41 +179,41 @@ double NumerUtil::digamma(const double &x) const{
 	} else {
 		double s   = -x;
 		double den = x;
-		for(uint32_t i=0; i < static_cast<uint32_t>(fln) + 1; i++) { // checked fln for < 0.0, so this should be safe
+		for(uint32_t i = 0; i < static_cast<uint32_t>(fln) + 1; ++i){ // checked fln for < 0.0, so this should be safe
 			den += 1.0;
 			s   += 1.0 / den;
 		}
 		return -s;
 	}
 }
-double NumerUtil::dotProd(const vector<double> &v) const{
+double NumerUtil::dotProd(const std::vector<double> &v) const{
 	double dotProd = 0.0;
-	for (auto &element : v) {
+	for (auto &element : v){
 		dotProd += element * element;
 	}
 	return dotProd;
 }
-double NumerUtil::dotProd(const vector<double> &v1, const vector<double> &v2) const{
+double NumerUtil::dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const{
 	double dotProd = 0.0;
-	auto v1It = v1.begin();
-	auto v2It = v2.begin();
+	auto v1It      = v1.begin();
+	auto v2It      = v2.begin();
 	// this ensures that we don't go beyond one of the vectors; worth declaring the iterators outside the loop and the extra operations
-	for ( ; (v1It != v1.end()) && (v2It != v2.end()); ++v1It, ++v2It) {
+	for ( ; (v1It != v1.end()) && (v2It != v2.end()); ++v1It, ++v2It){
 		dotProd += (*v1It) * (*v2It);
 	}
 	return dotProd;
 }
 void NumerUtil::updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const{
-	if ( wn > numeric_limits<double>::epsilon() ) {
+	if ( wn > std::numeric_limits<double>::epsilon() ){
 		const double a = mu * w;
 		w += wn;
 		mu = (a + wn * xn) / w;
 	}
 }
-double NumerUtil::mean(const double arr[], const size_t &len){
+double NumerUtil::mean(const double arr[], const size_t &len) {
 	double mean = 0.0;
 
-	for (size_t i = 0; i < len; i++) {
+	for (size_t i = 0; i < len; ++i){
 		mean += (arr[i] - mean) / static_cast<double>(i + 1);
 	}
 	return mean;

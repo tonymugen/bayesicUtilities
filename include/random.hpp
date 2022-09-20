@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Anthony J. Greenberg
+ * Copyright (c) 2022 Anthony J. Greenberg
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
@@ -20,7 +20,7 @@
 /// Random number generation
 /** \file
  * \author Anthony J. Greenberg
- * \copyright Copyright (c) 2017 Anthony J. Greenberg
+ * \copyright Copyright (c) 2017 -- 2022 Anthony J. Greenberg
  * \version 1.0
  *
  * Class definition and interface documentation for facilities that generate random draws from various distributions.
@@ -35,6 +35,7 @@
 
 namespace BayesicSpace {
 #ifdef __x86_64__
+#include <immintrin.h>
 	static uint64_t randomSeed() {
 		std::random_device r;
 		return __rdtsc() ^ r();
