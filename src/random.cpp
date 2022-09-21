@@ -32,6 +32,7 @@
 #include <cmath>
 #include <numeric>
 #include <cassert>
+#include <random>
 
 
 #include "random.hpp"
@@ -438,6 +439,10 @@ uint64_t RanDraw::vitter(const double &n, const double &N) noexcept {
 	return S;
 }
 
+uint64_t RanDraw::randomSeed_() const {
+	std::random_device r;
+	return r();
+}
 
 
 

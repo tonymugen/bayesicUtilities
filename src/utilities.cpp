@@ -62,14 +62,14 @@ const double NumerUtil::bvalues_[22] = {
 	4.88332318973593167e+14, -1.92965793419400681e+16
 };
 
-void NumerUtil::swapXOR(size_t &i, size_t &j) const{
-	if (&i != &j) { // no move needed if this is actually the same variable
+void NumerUtil::swapXOR(size_t &i, size_t &j) const noexcept {
+	if (&i != &j){ // no move needed if this is actually the same variable
 		i ^= j;
 		j ^= i;
 		i ^= j;
 	}
 }
-double NumerUtil::logistic(const double &x) const{
+double NumerUtil::logistic(const double &x) const noexcept {
 	// 35.0 is the magic number because logistic(-35) ~ EPS
 	// the other cut-offs have been empirically determined
 	if (x <= - 35.0){
@@ -81,10 +81,10 @@ double NumerUtil::logistic(const double &x) const{
 	} else if (x >= 3.5){  // approximation for largish x
 		return 1.0 - exp(-x);
 	} else {
-		return 1.0 / ( 1 + exp(-x) );
+		return 1.0 / ( 1.0 + exp(-x) );
 	}
 }
-double NumerUtil::lnGamma(const double &x) const{
+double NumerUtil::lnGamma(const double &x) const noexcept {
 	if (x <= 0.0) return nan("");
 
 	// define the weird magical coefficients
@@ -103,7 +103,7 @@ double NumerUtil::lnGamma(const double &x) const{
 
 	return tmp + log(cZero / x);
 }
-double NumerUtil::digamma(const double &x) const{
+double NumerUtil::digamma(const double &x) const noexcept {
 #ifndef NDEBUG
 	const int32_t nMax = 100;
 #endif
@@ -170,7 +170,7 @@ double NumerUtil::digamma(const double &x) const{
 		if (xinc > 0.0) {
 			// backward recursion from xdmy to x
 			int32_t nx = static_cast<int32_t>(xinc);
-			assert( (nx <= nMax) && "Increment nx too large in locDigamma()" );
+			assert( (nx <= nMax) && "ERROR: Increment nx too large in locDigamma()" );
 			for(int32_t i = 1; i <= nx; ++i){
 				s += 1.0 / ( x + static_cast<double>(nx - i) ); // avoid disastrous cancellation, according to the comment in the R code
 			}
@@ -186,14 +186,14 @@ double NumerUtil::digamma(const double &x) const{
 		return -s;
 	}
 }
-double NumerUtil::dotProd(const std::vector<double> &v) const{
+double NumerUtil::dotProd(const std::vector<double> &v) const noexcept {
 	double dotProd = 0.0;
 	for (auto &element : v){
 		dotProd += element * element;
 	}
 	return dotProd;
 }
-double NumerUtil::dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const{
+double NumerUtil::dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const noexcept {
 	double dotProd = 0.0;
 	auto v1It      = v1.begin();
 	auto v2It      = v2.begin();
@@ -203,14 +203,14 @@ double NumerUtil::dotProd(const std::vector<double> &v1, const std::vector<doubl
 	}
 	return dotProd;
 }
-void NumerUtil::updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const{
+void NumerUtil::updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const noexcept {
 	if ( wn > std::numeric_limits<double>::epsilon() ){
 		const double a = mu * w;
 		w += wn;
 		mu = (a + wn * xn) / w;
 	}
 }
-double NumerUtil::mean(const double arr[], const size_t &len) {
+double NumerUtil::mean(const double arr[], const size_t &len) const noexcept {
 	double mean = 0.0;
 
 	for (size_t i = 0; i < len; ++i){

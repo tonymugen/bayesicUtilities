@@ -31,21 +31,10 @@
 
 #include <vector>
 #include <array>
-#include <random>
+#include <cstdint>
+#include <cmath>
 
 namespace BayesicSpace {
-#ifdef __x86_64__
-#include <immintrin.h>
-	static uint64_t randomSeed() {
-		std::random_device r;
-		return __rdtsc() ^ r();
-	}
-#elif
-	static uint64_t randomSeed() {
-		std::random_device r;
-		return r();
-	}
-#endif
 
 	class RanDraw;
 
@@ -61,9 +50,9 @@ namespace BayesicSpace {
 	public:
 		/** \brief Default constructor
 		 *
-		 * Seeded with the RDTSC instruction if available.
+		 * Seeded internally with a random number.
 		 */
-		RanDraw() : RanDraw( randomSeed() ) {};
+		RanDraw() : RanDraw( randomSeed_() ) {};
 		/** \brief Constructor with seed
 		 *
 		 * Sets the provided seed.
@@ -157,7 +146,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the zero-mean Gaussian distribution
 		 */
-		double rnorm(const double &sigma) noexcept { return ( this->rnorm() ) * sigma; };
+		double rnorm(const double &sigma) noexcept { return this->rnorm() * sigma; };
 		/** \brief A Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu \f$ and standard deviation \f$ \sigma \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -166,7 +155,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the Gaussian distribution
 		 */
-		double rnorm(const double &mu, const double &sigma) noexcept { return mu + ( this->rnorm() ) * sigma; };
+		double rnorm(const double &mu, const double &sigma) noexcept { return mu + this->rnorm() * sigma; };
 		/** \brief A standard Gamma deviate
 		 *
 		 * Generates a Gamma random variable with shape \f$ \alpha > 0 \f$ and standard scale \f$ \beta = 1.0 \f$. Implements the Marsaglia and Tsang (2000) method.
@@ -273,6 +262,8 @@ namespace BayesicSpace {
 		 * Used for the Gaussian ziggurat algorithm.
 		 */
 		static const std::array<double, 128> wtab_;
+		/** \brief Random seed for internal PRNG seeding */
+		uint64_t randomSeed_() const ;
 	};
 
 }

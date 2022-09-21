@@ -48,13 +48,13 @@ namespace BayesicSpace {
 	 * \param[in,out] i first integer
 	 * \param[in,out] j second integer
 	 */
-	void swapXOR(size_t &i, size_t &j) const;
+	void swapXOR(size_t &i, size_t &j) const noexcept;
 	/** \brief Logit function
 	 *
 	 * \param[in] p probability in the (0, 1) interval
 	 * \return logit transformation
 	 */
-	double logit(const double &p) const { return log(p) - log(1.0 - p); }
+	double logit(const double &p) const noexcept { return log(p) - log(1.0 - p); }
 	/** \brief Logistic function
 	 *
 	 * There is a guard against under- and overflow: the function returns 0.0 for \f$ x \le -35.0\f$ and 1.0 for \f$x \ge 35.0\f$.
@@ -62,7 +62,7 @@ namespace BayesicSpace {
 	 * \param[in] x value to be projected to the (0, 1) interval
 	 * \return logistic transformation
 	 */
-	double logistic(const double &x) const;
+	double logistic(const double &x) const noexcept;
 	/** \brief Logarithm of the Gamma function
 	 *
 	 * The log of the \f$ \Gamma(x) \f$ function. Implementing the Lanczos algorithm following Numerical Recipes in C++.
@@ -71,7 +71,7 @@ namespace BayesicSpace {
 	 * \return \f$ \log \Gamma(x) \f$
 	 *
 	 */
-	double lnGamma(const double &x) const;
+	double lnGamma(const double &x) const noexcept;
 	/** \brief Digamma function
 	 *
 	 * Defined only for \f$ x > 0 \f$, will return _NaN_ otherwise. Adopted from the `dpsifn` function in R.
@@ -79,20 +79,20 @@ namespace BayesicSpace {
 	 * \param[in] x function argument (must be positive)
 	 * \return value of the digamma function
 	 */
-	double digamma(const double &x) const;
+	double digamma(const double &x) const noexcept;
 	/** \brief Vector self-dot-product
 	 *
 	 * \param[in] v vector
 	 * \return dot-product value
 	 */
-	double dotProd(const std::vector<double> &v) const;
+	double dotProd(const std::vector<double> &v) const noexcept;
 	/** \brief Dot-product of two vectors
 	 *
 	 * \param[in] v1 vector 1
 	 * \param[in] v2 vector 2
 	 * \return dot-product value
 	 */
-	double dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const;
+	double dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const noexcept;
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
@@ -107,7 +107,7 @@ namespace BayesicSpace {
 	 * \param[out] w new weight
 	 *
 	 */
-	 void updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const;
+	 void updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const noexcept;
 	/** \brief Mean of an array
 	 *
 	 * Uses the numerically stable recursive algorithm.
@@ -116,7 +116,7 @@ namespace BayesicSpace {
 	 * \param[in] len array length
 	 * \return mean value
 	 */
-	double mean(const double arr[], const size_t &len);
+	double mean(const double arr[], const size_t &len) const noexcept;
 
 	private:
 		/** \brief Gamma function magical coefficients */
