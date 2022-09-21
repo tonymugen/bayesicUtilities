@@ -98,7 +98,7 @@ namespace BayesicSpace {
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
 	 *
 	 * \f$
-	 *     \bar{\mu}_n = \dfrac{\bar{\mu}_{n-1}\sum_{i=1}^{n-1}w_i + w_n x_n}{\sum_{i=1}^{n-1}w_i + w_n}
+	 *     \bar{\mu}_n = \frac{\bar{\mu}_{n-1}\sum_{i=1}^{n-1}w_i + w_n x_n}{\sum_{i=1}^{n-1}w_i + w_n}
 	 * \f$
 	 *
 	 * \param[in] xn new point \f$ x_n \f$

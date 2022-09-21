@@ -75,7 +75,6 @@ namespace BayesicSpace {
 		/** \brief Copy constructor
 		 *
 		 * \param[in] in `Index` to be copied
-		 * \return `Index` object
 		 */
 		Index(const Index &in);
 		/** \brief Copy assignment operator
@@ -87,7 +86,6 @@ namespace BayesicSpace {
 		/** \brief Move constructor
 		 *
 		 * \param[in] in `Index` object to be moved
-		 * \return `Index` object
 		 */
 		Index(Index &&in) noexcept;
 		/** \brief Move assignment operator
