@@ -44,6 +44,7 @@ namespace BayesicSpace {
 	 * Generates pseudo-random deviates from a number of distributions.
 	 * Uses an implementation of the 64-bit MT19937 ("Mersenne Twister")  \cite matsumoto98a pseudo-random number generator (PRNG) for random integers.
 	 * This implementation of MT is ~35% faster than in `std::random` and ~250-fold faster than hardware RDRAND.
+	 * The implementation is not thread safe (thread safety results in an unacceptable overhead), so a thread-local copy must be used.
 	 *
 	 */
 	class RanDraw {

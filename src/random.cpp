@@ -182,7 +182,7 @@ RanDraw & RanDraw::operator= (RanDraw &&old) {
 uint64_t RanDraw::ranInt() noexcept {
 	if (mti_ == n_){ // do we need to re-run the twister?
 		size_t i = 0;
-		for (; i < n_ - m_; ++i){ // first _m words
+		for (; i < n_ - m_; ++i){ // first m_ words
 			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
 			mt_[i] = mt_[i + m_] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
 		}
