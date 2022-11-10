@@ -40,18 +40,6 @@
 using namespace BayesicSpace;
 
 // RanDraw static members
-constexpr uint16_t RanDraw::n_  = 312;
-constexpr uint16_t RanDraw::m_  = 156;
-constexpr uint64_t RanDraw::lm_ = static_cast<uint64_t>(0xFFFFFFFF80000000);
-constexpr uint64_t RanDraw::um_ = static_cast<uint64_t>(0x7FFFFFFF);
-constexpr uint64_t RanDraw::b_  = static_cast<uint64_t>(0x71D67FFFEDA60000);
-constexpr uint64_t RanDraw::c_  = static_cast<uint64_t>(0xFFF7EEE000000000);
-constexpr uint64_t RanDraw::d_  = static_cast<uint64_t>(0x5555555555555555);
-constexpr uint32_t RanDraw::l_  = 43;
-constexpr uint32_t RanDraw::s_  = 17;
-constexpr uint32_t RanDraw::t_  = 37;
-constexpr uint32_t RanDraw::u_  = 29;
-constexpr std::array<uint64_t, 2> RanDraw::alt_{static_cast<uint64_t>(0), static_cast<uint64_t>(0xB5026F5AA96619E9)};
 constexpr double RanDraw::paramR_ = 3.44428647676;
 constexpr std::array<double, 128> RanDraw::ytab_ = {
 	1.0, 0.963598623011, 0.936280813353, 0.913041104253,
@@ -157,12 +145,13 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 };
 
 RanDraw::RanDraw(const uint64_t &seed) {
-	const uint64_t f = 6364136223846793005ULL;
-	mt_[0] = seed;
-	mti_   = 1;
-
-	for (; mti_ < n_; ++mti_){
-		mt_[mti_] = (f * (mt_[mti_ - 1] ^ (mt_[mti_ - 1] >> 62)) + mti_);
+	uint64_t x = seed;
+	for (size_t si = 0; si < 4; ++si){
+		x         += 0x9e3779b97f4a7c15;
+		uint64_t z = x;
+		z          = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+		z          = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+		s_[si]     = z;
 	}
 }
 
@@ -172,39 +161,25 @@ RanDraw::RanDraw(RanDraw &&old) {
 
 RanDraw & RanDraw::operator= (RanDraw &&old) {
 	if (this != &old){
-		mt_  = std::move(old.mt_);
-		mti_ = old.mti_;
-		x_   = old.x_;
+		s_  = std::move(old.s_);
 	}
 	return *this;
 }
 
 uint64_t RanDraw::ranInt() noexcept {
-	if (mti_ == n_){ // do we need to re-run the twister?
-		size_t i = 0;
-		for (; i < n_ - m_; ++i){ // first m_ words
-			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
-			mt_[i] = mt_[i + m_] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
-		}
-		for (; i < n_ - 1; ++i){ // rest, except for the last element
-			x_     = (mt_[i] & um_) | (mt_[i + 1] & lm_);
-			mt_[i] = mt_[i + (m_ - n_)] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
-		}
-		// now set the last element
-		x_          = (mt_[n_ - 1] & um_) | (mt_[0] & lm_);
-		mt_[n_ - 1] = mt_[m_ - 1] ^ (x_ >> 1) ^ alt_[static_cast<size_t>(x_ & 1ULL)];
+	const uint64_t x  = s_[0] + s_[3];
+	const uint64_t rs = ( (x << 23) | (x >> 41) ) + s_[0]; // this is rotl and sum; compilers will generate the right instruction
 
-		mti_ = 0;
-	}
-	// extract pseudo-random number
-	x_ = mt_[mti_++]; // increment AFTER using as an index
+	s_[2] ^= s_[0];
+	s_[3] ^= s_[1];
+	s_[1] ^= s_[2];
+	s_[0] ^= s_[3];
 
-	x_ ^= ( (x_ >> u_) & d_ );
-	x_ ^= ( (x_ << s_) & b_ );
-	x_ ^= ( (x_ << t_) & c_ );
-	x_ ^= (x_ >> l_);
+	s_[2] ^= s_[1] << 17;
 
-	return x_;
+	s_[3] = (s_[3] << 45) | (s_[3] >> 19); // rotl again
+
+	return rs;
 }
 
 uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {

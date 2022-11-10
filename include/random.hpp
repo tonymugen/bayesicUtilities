@@ -42,8 +42,7 @@ namespace BayesicSpace {
 	/** \brief Random number generating class
 	 *
 	 * Generates pseudo-random deviates from a number of distributions.
-	 * Uses an implementation of the 64-bit MT19937 ("Mersenne Twister")  \cite matsumoto98a pseudo-random number generator (PRNG) for random integers.
-	 * This implementation of MT is ~35% faster than in `std::random` and ~250-fold faster than hardware RDRAND.
+	 * Uses an implementation of the [xoshiro256++](https://prng.di.unimi.it/) pseudo-random number generator (PRNG) for random integers.
 	 * The implementation is not thread safe (thread safety results in an unacceptable overhead), so a thread-local copy must be used.
 	 *
 	 */
@@ -56,7 +55,7 @@ namespace BayesicSpace {
 		RanDraw() : RanDraw( randomSeed_() ) {};
 		/** \brief Constructor with seed
 		 *
-		 * Sets the provided seed.
+		 * Initializes the PRNG with the provided seed using `splitmix64`.
 		 *
 		 * \param[in] seed seed value
 		 */
@@ -223,36 +222,8 @@ namespace BayesicSpace {
 		uint64_t vitter(const double &n, const double &N) noexcept;
 	private:
 		// Mersenne twister constants
-		/** \brief MT degree of recurrence */
-		static const uint16_t n_;
-		/** \brief MT middle word */
-		static const uint16_t m_;
-		/** \brief MT most significant 33 bits */
-		static const uint64_t um_;
-		/** \brief MT least significant 31 bits */
-		static const uint64_t lm_;
-		/** \brief MT tempering bitmask */
-		static const uint64_t b_;
-		/** \brief MT tempering bitmask */
-		static const uint64_t c_;
-		/** \brief MT tempering bitmask */
-		static const uint64_t d_;
-		/** \brief MT tempering shift */
-		static const uint32_t l_;
-		/** \brief MT tempering shift */
-		static const uint32_t s_;
-		/** \brief MT tempering shift */
-		static const uint32_t t_;
-		/** \brief MT tempering shift */
-		static const uint32_t u_;
-		/** \brief MT array of alternative values for the twist */
-		static const std::array<uint64_t, 2> alt_;
-		/** \brief MT generator state array */
-		std::array<uint64_t, 312> mt_;
-		/** \brief MT state of the array index */
-		size_t mti_;
-		/** \brief MT current state */
-		uint64_t x_;
+		/** \brief xoshiro256++ state array */
+		std::array<uint64_t, 4> s_;
 		/** \brief Right-most step position
 		 *
 		 * Used for the Gaussian ziggurat algorithm.
