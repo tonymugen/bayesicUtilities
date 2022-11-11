@@ -28,6 +28,7 @@
  */
 
 #include <array>
+#include <math.h>
 #include <vector>
 #include <cmath>
 #include <numeric>
@@ -112,7 +113,7 @@ constexpr std::array<uint64_t, 128> RanDraw::ktab_ = {
 constexpr std::array<double, 128> RanDraw::wtab_ = {
 	1.62318314817e-08, 2.16291505214e-08, 2.54246305087e-08, 2.84579525938e-08,
 	3.10340022482e-08, 3.33011726243e-08, 3.53439060345e-08, 3.72152672658e-08,
-	3.8950989572e-08, 4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
+	3.8950989572e-08,  4.05763964764e-08, 4.21101548915e-08, 4.35664624904e-08,
 	4.49563968336e-08, 4.62887864029e-08, 4.75707945735e-08, 4.88083237257e-08,
 	5.00063025384e-08, 5.11688950428e-08, 5.22996558616e-08, 5.34016475624e-08,
 	5.44775307871e-08, 5.55296344581e-08, 5.65600111659e-08, 5.75704813695e-08,
@@ -120,7 +121,7 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 	6.23756851626e-08, 6.32957121259e-08, 6.42043903937e-08, 6.51025540077e-08,
 	6.59909735447e-08, 6.68703634341e-08, 6.77413882848e-08, 6.8604668381e-08,
 	6.94607844804e-08, 7.03102820203e-08, 7.11536748229e-08, 7.1991448372e-08,
-	7.2824062723e-08, 7.36519550992e-08, 7.44755422158e-08, 7.52952223703e-08,
+	7.2824062723e-08,  7.36519550992e-08, 7.44755422158e-08, 7.52952223703e-08,
 	7.61113773308e-08, 7.69243740467e-08, 7.77345662086e-08, 7.85422956743e-08,
 	7.93478937793e-08, 8.01516825471e-08, 8.09539758128e-08, 8.17550802699e-08,
 	8.25552964535e-08, 8.33549196661e-08, 8.41542408569e-08, 8.49535474601e-08,
@@ -131,22 +132,30 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 	9.88165885297e-08, 9.96653446693e-08, 1.00519899658e-07, 1.0138063623e-07,
 	1.02247952126e-07, 1.03122261554e-07, 1.04003996769e-07, 1.04893609795e-07,
 	1.05791574313e-07, 1.06698387725e-07, 1.07614573423e-07, 1.08540683296e-07,
-	1.09477300508e-07, 1.1042504257e-07, 1.11384564771e-07, 1.12356564007e-07,
+	1.09477300508e-07, 1.1042504257e-07,  1.11384564771e-07, 1.12356564007e-07,
 	1.13341783071e-07, 1.14341015475e-07, 1.15355110887e-07, 1.16384981291e-07,
 	1.17431607977e-07, 1.18496049514e-07, 1.19579450872e-07, 1.20683053909e-07,
-	1.21808209468e-07, 1.2295639141e-07, 1.24129212952e-07, 1.25328445797e-07,
+	1.21808209468e-07, 1.2295639141e-07,  1.24129212952e-07, 1.25328445797e-07,
 	1.26556042658e-07, 1.27814163916e-07, 1.29105209375e-07, 1.30431856341e-07,
-	1.31797105598e-07, 1.3320433736e-07, 1.34657379914e-07, 1.36160594606e-07,
+	1.31797105598e-07, 1.3320433736e-07,  1.34657379914e-07, 1.36160594606e-07,
 	1.37718982103e-07, 1.39338316679e-07, 1.41025317971e-07, 1.42787873535e-07,
-	1.44635331499e-07, 1.4657889173e-07, 1.48632138436e-07, 1.50811780719e-07,
+	1.44635331499e-07, 1.4657889173e-07,  1.48632138436e-07, 1.50811780719e-07,
 	1.53138707402e-07, 1.55639532047e-07, 1.58348931426e-07, 1.61313325908e-07,
 	1.64596952856e-07, 1.68292495203e-07, 1.72541128694e-07, 1.77574279496e-07,
 	1.83813550477e-07, 1.92166040885e-07, 2.05295471952e-07, 2.22600839893e-07
 };
 
-RanDraw::RanDraw(const uint64_t &seed) {
+RanDraw::RanDraw() noexcept {
+	std::random_device r;
+	s_[0] = r();
+	s_[1] = r();
+	s_[2] = r();
+	s_[3] = r();
+}
+
+RanDraw::RanDraw(const uint64_t &seed) noexcept {
 	uint64_t x = seed;
-	for (size_t si = 0; si < 4; ++si){
+	for (size_t si = 0; si < s_.size(); ++si){
 		x         += 0x9e3779b97f4a7c15;
 		uint64_t z = x;
 		z          = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
@@ -155,13 +164,13 @@ RanDraw::RanDraw(const uint64_t &seed) {
 	}
 }
 
-RanDraw::RanDraw(RanDraw &&old) {
+RanDraw::RanDraw(RanDraw &&old) noexcept {
 	*this = std::move(old);
 }
 
-RanDraw & RanDraw::operator= (RanDraw &&old) {
+RanDraw & RanDraw::operator= (RanDraw &&old) noexcept {
 	if (this != &old){
-		s_  = std::move(old.s_);
+		s_ = std::move(old.s_);
 	}
 	return *this;
 }
@@ -214,33 +223,6 @@ std::vector<uint64_t> RanDraw::shuffleUintUp(const uint64_t &N) {
 	return out; // relying on copy elision
 }
 
-double RanDraw::runifnz() noexcept {
-	double rnz = 0.0;
-	do {
-		rnz = this->runif();
-	} while (rnz == 0.0); // simply reject 0.0
-
-	return rnz;
-}
-
-double RanDraw::runifno() noexcept {
-	double rno = 0.0;
-	do {
-		rno = this->runif();
-	} while (rno == 1.0); // simply reject 1.0
-
-	return rno;
-}
-
-double RanDraw::runifop() noexcept {
-	double rno = 0.0;
-	do {
-		rno = this->runif();
-	} while ( (rno == 1.0) || (rno == 0.0) ); // simply reject 1.0 and 0.0
-
-	return rno;
-}
-
 double RanDraw::rnorm() noexcept {
 	double x;
 	double sign;
@@ -255,7 +237,7 @@ double RanDraw::rnorm() noexcept {
 		i &= 0x7f; // convert i to [0, 127], an index into the ziggurat slices
 
 		x = static_cast<double>(j) * wtab_[i];
-		if (j < ktab_[i]){ // _ktab is used to test for acceptance without floating point operations
+		if (j < ktab_[i]){ // ktab_ is used to test for acceptance without floating point operations
 			break;
 		}
 		double y;
@@ -387,7 +369,7 @@ uint64_t RanDraw::vitter(const double &n, const double &N) noexcept {
 		do {  // step D2; generate U and X
 			Vprime = pow(this->runif(), nInv);
 			X      = N * (1.0 - Vprime);
-			S      = floor(X);
+			S      = static_cast<uint64_t>( floor(X) );
 			d2tst++;
 		} while (S >= qu1);
 
@@ -423,11 +405,6 @@ uint64_t RanDraw::vitter(const double &n, const double &N) noexcept {
 		// reject everything, go back to the start
 	}
 	return S;
-}
-
-uint64_t RanDraw::randomSeed_() const {
-	std::random_device r;
-	return r();
 }
 
 

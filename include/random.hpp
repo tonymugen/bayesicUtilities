@@ -52,16 +52,16 @@ namespace BayesicSpace {
 		 *
 		 * Seeded internally with a random number.
 		 */
-		RanDraw() : RanDraw( randomSeed_() ) {};
+		RanDraw() noexcept;
 		/** \brief Constructor with seed
 		 *
 		 * Initializes the PRNG with the provided seed using `splitmix64`.
 		 *
 		 * \param[in] seed seed value
 		 */
-		RanDraw(const uint64_t &seed);
+		RanDraw(const uint64_t &seed) noexcept;
 		/** \brief Destructor */
-		~RanDraw(){ };
+		~RanDraw() noexcept { };
 		/** \brief Copy constructor (deleted)
 		 *
 		 * \param[in] old object to be copied
@@ -71,7 +71,7 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw(RanDraw &&old);
+		RanDraw(RanDraw &&old) noexcept;
 
 		/** \brief Copy assignment (deleted)
 		 *
@@ -82,7 +82,7 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw & operator= (RanDraw &&old);
+		RanDraw & operator= (RanDraw &&old) noexcept;
 		/** \brief Generate random integer
 		 *
 		 * \return An unsigned random 64-bit integer
@@ -125,22 +125,22 @@ namespace BayesicSpace {
 		 *
 		 * \return A double-precision value from the \f$ U[0,1]\f$ distribution
 		 */
-		double runif() noexcept {return 5.42101086242752217E-20 * static_cast<double>( this->ranInt() ); };
+		double runif() noexcept {return  static_cast<double>(this->ranInt() >> 11) / 9007199254740991.0; };
 		/** \brief Generate a non-zero uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1]\f$ distribution
 		 */
-		double runifnz() noexcept;
+		double runifnz() noexcept {return  (static_cast<double>(this->ranInt() >> 12) + 0.5) / 4503599627370495.5; };
 		/** \brief Generate a non-one uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U[0,1)\f$ distribution
 		 */
-		double runifno() noexcept;
+		double runifno() noexcept {return  static_cast<double>(this->ranInt() >> 11) / 9007199254740992.0; };
 		/** \brief Generate an open-interval uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1)\f$ distribution
 		 */
-		double runifop() noexcept;
+		double runifop() noexcept {return  (static_cast<double>(this->ranInt() >> 12) + 0.5) / 4503599627370496.0; };
 		/** \brief A standard Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma = 1.0 \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -243,8 +243,6 @@ namespace BayesicSpace {
 		 * Used for the Gaussian ziggurat algorithm.
 		 */
 		static const std::array<double, 128> wtab_;
-		/** \brief Random seed for internal PRNG seeding */
-		uint64_t randomSeed_() const ;
 	};
 
 }
