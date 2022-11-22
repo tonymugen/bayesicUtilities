@@ -18,7 +18,7 @@ if(NOT isMultiConfig)
 	endif()
 endif()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion -Wshadow -Wpedantic")
 
 add_library(brUtilities
 	src/random.cpp

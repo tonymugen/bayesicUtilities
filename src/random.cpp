@@ -35,7 +35,6 @@
 #include <cassert>
 #include <random>
 
-
 #include "random.hpp"
 
 using namespace BayesicSpace;
@@ -147,10 +146,14 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 
 RanDraw::RanDraw() noexcept {
 	std::random_device r;
-	s_[0] = r();
-	s_[1] = r();
-	s_[2] = r();
-	s_[3] = r();
+	uint64_t x = r();
+	for (size_t si = 0; si < s_.size(); ++si){
+		x         += 0x9e3779b97f4a7c15;
+		uint64_t z = x;
+		z          = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
+		z          = (z ^ (z >> 27)) * 0x94d049bb133111eb;
+		s_[si]     = z;
+	}
 }
 
 RanDraw::RanDraw(const uint64_t &seed) noexcept {
