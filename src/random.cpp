@@ -194,6 +194,22 @@ uint64_t RanDraw::ranInt() noexcept {
 	return rs;
 }
 
+uint64_t RanDraw::sampleInt(const uint64_t &max) noexcept {
+	const __uint128_t max128 = static_cast<__uint128_t>(max);
+	uint64_t bigRanInt       = this->ranInt();
+	__uint128_t prod         = static_cast<__uint128_t>(bigRanInt) * max128;
+	uint64_t prod64          = static_cast<uint64_t>(prod);
+	if (prod64 < max){
+		const uint64_t t = static_cast<uint64_t>(-max) % max;
+		while (prod64 < t){
+			bigRanInt = this->ranInt();
+			prod      = static_cast<__uint128_t>(bigRanInt) * max128;
+			prod64    = static_cast<uint64_t>(prod);
+		}
+	}
+	return static_cast<uint64_t>(prod >> 64);
+}
+
 uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {
 	assert( (min < max) && "ERROR: Lower bound not smaller than upper bound in RanDraw::sampleInt()" );
 

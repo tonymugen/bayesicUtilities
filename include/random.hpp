@@ -88,12 +88,16 @@ namespace BayesicSpace {
 		 * \return An unsigned random 64-bit integer
 		 */
 		uint64_t ranInt() noexcept;
-		/** \brief Sample and integer from the \f$ [0, n) \f$ interval
+		/** \brief Sample and integer from the \f$ [0, max) \f$ interval
 		 *
-		 * \param[in] max the maximal value \f$n\f$ (does not appear in the sample)
+		 * I use Lemire's nearly divisionless method to generate an unbiased sample.
+		 * This is described in https://lemire.me/blog/2019/06/06/nearly-divisionless-random-integer-generation-on-various-systems/
+		 * The paper is https://arxiv.org/abs/1805.10941
+		 *
+		 * \param[in] max the maximal value (does not appear in the sample)
 		 * \return sampled value
 		 */
-		uint64_t sampleInt(const uint64_t &max) noexcept { return this->ranInt() % max; };
+		uint64_t sampleInt(const uint64_t &max) noexcept;
 		/** \brief Sample and integer from the \f$ [m, n) \f$ interval
 		 *
 		 *
