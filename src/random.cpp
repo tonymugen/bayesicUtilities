@@ -216,17 +216,12 @@ uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {
 	return min + this->ranInt() % (max - min);
 }
 
-std::vector<uint64_t> RanDraw::shuffleUintDown(const uint64_t &N) {
-	std::vector<uint64_t> out(N);
-	std::iota(out.begin(), out.end(), 0);
-	for (uint64_t i = N - 1; i > 0; --i){
-		uint64_t j = this->sampleInt(i + 1); // sampleInt(n) samples j < n
-		// the three XORs trick to swap two integers; checking if equal not worth it (sometimes slower)
-		out[i] ^= out[j];
-		out[j] ^= out[i];
-		out[i] ^= out[j];
+std::vector<size_t> RanDraw::fyIndexesDown(const size_t &N){
+	std::vector<size_t> perInd(N, 0);
+	for (size_t i = N - 1; i > 0; --i){
+		perInd[i] = this->sampleInt(i + 1); // sampleInt(max) samples j < max
 	}
-	return out; // relying on copy elision
+	return perInd;
 }
 
 std::vector<uint64_t> RanDraw::shuffleUintUp(const uint64_t &N) {

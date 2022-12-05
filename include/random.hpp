@@ -106,15 +106,16 @@ namespace BayesicSpace {
 		 * \return sampled value
 		 */
 		uint64_t sampleInt(const uint64_t &min, const uint64_t &max) noexcept;
-		/** \brief Draw non-negative integers in random order
+		/** \brief Sample Fisher-Yates indexes from the top
 		 *
-		 * Uses the Fisher-Yates-Durstenfeld algorithm from the end of the sequence to produce a random shuffle of integers in \f$ [0, N) \f$.
+		 * Uses the Fisher-Yates-Durstenfeld algorithm from the end of the sequence to produce indexes in \f$ [0, N) \f$ for shuffling.
+		 * Going from the end of the resulting vector, one can then swap elements of a sequence between the vector index and the value that corresponds to it.
 		 *
 		 * \param[in] N the upper bound of the integer sequence
 		 *
-		 * \return vector of \f$ N \f$ shuffled integers
+		 * \return vector of \f$ N - 1 \f$ shuffling indexes
 		 */
-		std::vector<uint64_t> shuffleUintDown(const uint64_t &N);
+		std::vector<size_t> fyIndexesDown(const size_t &N);
 		/** \brief Draw non-negative integers in random order
 		 *
 		 * Uses the Fisher-Yates-Durstenfeld algorithm from the beginning of the sequence to produce a random shuffle of integers in \f$ [0, N) \f$.
