@@ -116,15 +116,16 @@ namespace BayesicSpace {
 		 * \return vector of \f$ N - 1 \f$ shuffling indexes
 		 */
 		std::vector<size_t> fyIndexesDown(const size_t &N);
-		/** \brief Draw non-negative integers in random order
+		/** \brief Sample Fisher-Yates indexes from the bottom
 		 *
-		 * Uses the Fisher-Yates-Durstenfeld algorithm from the beginning of the sequence to produce a random shuffle of integers in \f$ [0, N) \f$.
+		 * Uses the Fisher-Yates-Durstenfeld algorithm from the beginning of the sequence to produce indexes in \f$ [0, N) \f$ for shuffling.
+		 * Going from the start of the resulting vector, one can then swap elements of a sequence between the vector index and the value that corresponds to it.
 		 *
 		 * \param[in] N the upper bound of the integer sequence
 		 *
-		 * \return vector of \f$ N \f$ shuffled integers
+		 * \return vector of \f$ N - 1 \f$ shuffling indexes
 		 */
-		std::vector<uint64_t> shuffleUintUp(const uint64_t &N);
+		std::vector<size_t> fyIndexesUp(const size_t &N);
 
 		/** \brief Generate a uniform deviate
 		 *
