@@ -1,0 +1,23 @@
+Checks: "*,
+        -abseil-*,
+        -altera-*,
+        -android-*,
+		-boost-*,
+		-darwin-*,
+        -fuchsia-*,
+        -google-*,
+		-hicpp-*,
+		-linuxkernel-*,
+        -llvm*,
+        -modernize-use-trailing-return-type,
+		-mpi-*,
+		-objc-*,
+		-openmp-*,
+        -zircon-*,
+        -readability-static-accessed-through-instance,
+        -readability-avoid-const-params-in-decls,
+		-cppcoreguidelines-pro-bounds-pointer-arithmetic
+"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
