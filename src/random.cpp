@@ -328,31 +328,20 @@ void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &
 }
 
 uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept {
-	// The notation follows Vitter's (1987) as closely as possible
-	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
 	uint64_t sample{0};
 	auto top{static_cast<double>(Nremain - nToPick)};
-	double quot = top / Nremain;
-	double v;
+	double quot{top / Nremain};
 
 	// some trivial conditions first
 	if ( (nToPick == 0) || (nToPick > Nremain) ){
 		return sample;
 	}
 	if (nToPick == 1){
-		do {
-			sample = static_cast<uint64_t>( floor( Nremain * this->runif() ) );
-
-		} while ( sample == static_cast<uint64_t>(Nremain) ); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
-		return sample;
+		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
 	}
-	// [0,1) uniform
-	do {
-		v = this->runif();
-	} while (v == 1.0); // i.e. only repeat if v == 1.0
-
-	double Nloc = Nremain;
-	while (quot > v){
+	const double unifSample{this->runifop()};
+	double Nloc{Nremain};
+	while (quot > unifSample){
 		++sample;
 		--top;
 		--Nloc;
@@ -363,75 +352,65 @@ uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept
 }
 
 uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept {
-	// The notation follows Vitter's (1987) as closely as possible
-	// Note that my runif() is on [0,1] (Vitter assumes (0,1)), so I have to sometimes adjust accordingly
-	uint64_t S = 0;
-	double alphaInv = 13.0;
+	// Notation is as close as possible to Vitter (1987), Appendix A2
+	uint64_t sample{0};
+	const double alphaInv{13.0};
 	if (nToPick >= Nremain / alphaInv){ // if the threshold is not satisfied, use Vitter's A algorithm
 		return this->vitterA(nToPick, Nremain);
-	} else if (nToPick == 1){ // trivial case
-		do {
-			S = static_cast<uint64_t>( floor( Nremain * this->runif() ) );
-
-		} while ( S == static_cast<uint64_t>(Nremain) ); // s == N would be a problem because it would overshoot the end of the array/file (in base-0 space); effectively sampling [0,1) uniform to prevent this
-		return S;
-
+	}
+	if (nToPick == 1){ // trivial case
+		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
 	}
 
 	// if we pass all thresholds, we use Vitter's rejection scheme
-	double nInv     = 1.0 / nToPick;
-	double nMin1inv = 1.0 / (nToPick - 1.0);
-	double qu1db    = 1.0 + Nremain - nToPick;
-	uint64_t qu1    = static_cast<uint64_t>(qu1db);
-	double Vprime;
-	double X;
-	double Sdb;
-	double U;
-	double y1;
+	const double nInv{1.0 / nToPick};
+	const double nMin1inv{1.0 / (nToPick - 1.0)};
+	const double qu1db{1.0 + Nremain - nToPick};
+	const auto qu1{static_cast<uint64_t>(qu1db)};
 
 	// outer loop in Vitter (1987) A2
 	while (true){
-
-		unsigned int d2tst = 0;
+		double roofSample{0.0};                  // covering distribution sample for rejection
+		double Vprime{0.0};
 		do {  // step D2; generate U and X
-			Vprime = pow(this->runif(), nInv);
-			X      = Nremain * (1.0 - Vprime);
-			S      = static_cast<uint64_t>( floor(X) );
-			d2tst++;
-		} while (S >= qu1);
+			Vprime     = pow(this->runifop(), nInv); // same as exp(log(u)*nInv)
+			roofSample = Nremain * (1.0 - Vprime);
+			sample     = static_cast<uint64_t>( floor(roofSample) );
+		} while (sample >= qu1);
 
-		U      = this->runif();
-		Sdb    = static_cast<double>(S);
-		y1     = pow(U * Nremain / qu1db, nMin1inv);
-		Vprime = y1 * (1.0 - X / Nremain) * ( qu1db / (qu1db - Sdb) );
+		const auto dSample{static_cast<double>(sample)};
+		const double y1sample{pow(this->runifop() * Nremain / qu1db, nMin1inv)};
+		Vprime = y1sample * (1.0 - roofSample / Nremain) * ( qu1db / (qu1db - dSample) );
 		if (Vprime < 1.0){ // Step D3: accept test 2.8 (Vitter 1987)
 			break;
 		}
 		// moving on to Step D4
-		double y2  = 1.0;
-		double top = Nremain - 1.0;
-		double bottom;
-		double limit;
-		if (Sdb < nToPick - 1.0){
+		double y2sample{1.0};
+		double top{Nremain - 1.0};
+		double bottom{0.0};
+		uint64_t limit{0};
+		if (dSample < nToPick - 1.0){
 			bottom = Nremain - nToPick;
-			limit  = Nremain - Sdb;
+			limit  = static_cast<uint64_t>(Nremain - dSample);
 		} else {
-			bottom = Nremain - Sdb - 1.0;
-			limit  = qu1db;
+			bottom = Nremain - dSample - 1.0;
+			limit  = qu1;
 		}
 
 		// calculate f(|_X_|)
-		for (double t = Nremain - 1.0; t >= limit; --t){
-			y2 = y2 * top / bottom;
-			--top;
-			--bottom;
+		auto loopVar = static_cast<uint64_t>(Nremain - 1.0);
+		while (loopVar >= limit){
+			y2sample *= top / bottom;
+			top      -= 1.0;
+			bottom   -= 1.0;
+			--loopVar;
 		}
-		if ( Nremain / (Nremain - X) >= y1 * pow(y2, nMin1inv) ){ // Accept D4 condition
+		if ( Nremain / (Nremain - roofSample) >= y1sample * pow(y2sample, nMin1inv) ){ // Accept D4 condition
 			break;
 		}
 		// reject everything, go back to the start
 	}
-	return S;
+	return sample;
 }
 
 
