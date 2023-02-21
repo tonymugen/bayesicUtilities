@@ -314,17 +314,18 @@ double RanDraw::rgamma(const double &alpha) noexcept {
 	return shiftedAlpha * scaledNorm;
 }
 
-void RanDraw::rdirichlet(const std::vector<double> &alpha, std::vector<double> &probabilities) noexcept {
-	assert( ( alpha.size() == p.size() ) && "ERROR: length of alpha vector not the same as length of p vector in RanDraw::rdirichlet()" );
-
-	double sum = 0.0;
-	for (size_t k = 0; k < alpha.size(); ++k){
-		probabilities[k] = this->rgamma(alpha[k]);
-		sum += probabilities[k];
+std::vector<double> RanDraw::rdirichlet(const std::vector<double> &alpha) {
+	double sum{0.0};
+	std::vector<double> probabilities;
+	probabilities.reserve( alpha.size() );
+	for (const auto &eachAlpha : alpha){
+		probabilities.push_back( this->rgamma(eachAlpha) );
+		sum += probabilities.back();
 	}
 	for (auto &eachP : probabilities){
 		eachP = eachP / sum;
 	}
+	return probabilities;
 }
 
 uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept {

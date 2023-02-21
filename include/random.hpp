@@ -193,9 +193,9 @@ namespace BayesicSpace {
 		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
 		 *
 		 * \param[in] alpha vector of concentration parameters
-		 * \param[out] probabilities vector of probabilities, must be the same length as \f$ \alpha \f$.
+		 * \return vector of probabilities, will be the same length as `alpha`.
 		 */
-		void rdirichlet(const std::vector<double> &alpha, std::vector<double> &probabilities) noexcept;
+		std::vector<double> rdirichlet(const std::vector<double> &alpha);
 		/** \brief A chi-square deviate
 		 *
 		 * Generates a \f$ \chi^2 \f$ random variable with degrees of freedom \f$ \nu > 0.0 \f$.
