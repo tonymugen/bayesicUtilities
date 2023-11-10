@@ -28,7 +28,7 @@
  *
  */
 
-#include <math.h>
+#include <cstdint>
 #include <vector>
 #include <cmath>
 #include <string>

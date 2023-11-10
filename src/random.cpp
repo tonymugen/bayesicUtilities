@@ -29,6 +29,7 @@
 
 #include <array>
 #include <vector>
+#include <algorithm>
 #include <cmath>
 #include <numeric>
 #include <cassert>
@@ -175,17 +176,6 @@ RanDraw::RanDraw(const uint64_t &seed) noexcept : state_{0, 0, 0, 0} {
 	}
 }
 
-RanDraw::RanDraw(RanDraw &&old) noexcept : state_{old.state_} {
-	*this = std::move(old);
-}
-
-RanDraw & RanDraw::operator= (RanDraw &&old) noexcept {
-	if (this != &old){
-		state_ = old.state_;
-	}
-	return *this;
-}
-
 uint64_t RanDraw::ranInt() noexcept {
 	const uint64_t stateSum  = state_[0] + state_[3];
 	const uint64_t sumRotSum = ( (stateSum << 23) | (stateSum >> 41) ) + state_[0]; // this is rotl and sum; compilers will generate the right instruction
@@ -219,25 +209,22 @@ uint64_t RanDraw::sampleInt(const uint64_t &max) noexcept {
 }
 
 uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {
-	assert( (min < max) && "ERROR: Lower bound not smaller than upper bound in RanDraw::sampleInt()" );
+	assert( (min <= max) && "ERROR: Lower bound not smaller than upper bound in RanDraw::sampleInt()" );
 
-	return min + this->ranInt() % (max - min);
+	return min + this->sampleInt(max - min);
 }
 
-std::vector<size_t> RanDraw::fyIndexesDown(const size_t &Nidx){
-	std::vector<size_t> perInd(Nidx, 0);
-	for (size_t i = Nidx - 1; i > 0; --i){
-		perInd[i] = this->sampleInt(i + 1); // sampleInt(max) samples j < max
-	}
+std::vector<size_t> RanDraw::fyIndexesDown(const size_t &Nidx) {
+	std::vector<size_t> perInd(Nidx - 1);
+	std::iota(perInd.begin(), perInd.end(), 1UL);
+	std::for_each(perInd.rbegin(), perInd.rend(), [this](size_t &elm){elm = this->sampleInt(elm + 1);}); // sampleInt is < max
 	return perInd;
 }
 
-std::vector<size_t> RanDraw::fyIndexesUp(const size_t &Nidx){
-	std::vector<size_t> perInd;
-	perInd.reserve(Nidx - 1);
-	for (size_t i = 0; i < Nidx - 1; ++i){
-		perInd.push_back( this->sampleInt(i, Nidx) );
-	}
+std::vector<size_t> RanDraw::fyIndexesUp(const size_t &Nidx) {
+	std::vector<size_t> perInd(Nidx - 1);
+	std::iota(perInd.begin(), perInd.end(), 0UL);
+	std::for_each(perInd.begin(), perInd.end(), [this, &Nidx](size_t &elm){elm = this->sampleInt(elm, Nidx);});
 	return perInd;
 }
 
@@ -251,11 +238,11 @@ double RanDraw::rnorm() noexcept {
 	constexpr uint64_t mask127{0x7f};
 
 	while (true){
-		iIdx  = this->ranInt() & mask255;        // choose the step
-		jIdx  = this->ranInt() % maxJind;        // sample from 2^24
+		iIdx  = this->ranInt() & mask255;                // choose the step
+		jIdx  = this->ranInt() % maxJind;                // sample from 2^24
 
 		sign  = ( (iIdx & signMask_) > 0 ) ? 1.0 : -1.0;
-		iIdx &= mask127;                               // convert iIdx to [0, 127], an index into the ziggurat slices
+		iIdx &= mask127;                                 // convert iIdx to [0, 127], an index into the ziggurat slices
 
 		absValue = static_cast<double>(jIdx) * wtab_.at(iIdx);
 		if ( jIdx < ktab_.at(iIdx) ){ // ktab_ is used to test for acceptance without floating point operations

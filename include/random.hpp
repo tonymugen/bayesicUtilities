@@ -71,7 +71,7 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw(RanDraw &&old) noexcept;
+		RanDraw(RanDraw &&old) noexcept = default;
 
 		/** \brief Copy assignment (deleted)
 		 *
@@ -82,7 +82,7 @@ namespace BayesicSpace {
 		 *
 		 * \param[in] old object to be moved
 		 */
-		RanDraw & operator= (RanDraw &&old) noexcept;
+		RanDraw & operator= (RanDraw &&old) noexcept = default;
 		/** \brief Generate random integer
 		 *
 		 * \return An unsigned random 64-bit integer
@@ -100,6 +100,7 @@ namespace BayesicSpace {
 		uint64_t sampleInt(const uint64_t &max) noexcept;
 		/** \brief Sample and integer from the \f$ [m, n) \f$ interval
 		 *
+		 * _m_ must be no larger than _n_. This is only checked (via `assert()`) when in debug or testing mode.
 		 *
 		 * \param[in] min the minimal value \f$m\f$ (can appear in the sample)
 		 * \param[in] max the maximal value \f$n\f$ (does not appear in the sample)
@@ -227,7 +228,6 @@ namespace BayesicSpace {
 		 */
 		uint64_t vitter(const double &nToPick, const double &Nremain) noexcept;
 	private:
-		// Mersenne twister constants
 		/** \brief xoshiro256++ state array */
 		std::array<uint64_t, 4> state_;
 		/** \brief Seed increment for initialization */
