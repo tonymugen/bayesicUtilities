@@ -208,7 +208,7 @@ uint64_t RanDraw::sampleInt(const uint64_t &max) noexcept {
 	__uint128_t prod   = static_cast<__uint128_t>(bigRanInt) * max128;
 	auto prod64        = static_cast<uint64_t>(prod);
 	if (prod64 < max){
-		const uint64_t test = static_cast<uint64_t>(-max) % max;
+		const uint64_t test = (-max) % max;
 		while (prod64 < test){
 			bigRanInt = this->ranInt();
 			prod      = static_cast<__uint128_t>(bigRanInt) * max128;
@@ -330,7 +330,7 @@ std::vector<double> RanDraw::rdirichlet(const std::vector<double> &alpha) {
 
 uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept {
 	uint64_t sample{0};
-	auto top{static_cast<double>(Nremain - nToPick)};
+	double top{Nremain - nToPick};
 	double quot{top / Nremain};
 
 	// some trivial conditions first
