@@ -156,7 +156,7 @@ constexpr std::array<double, 128> RanDraw::wtab_ = {
 RanDraw::RanDraw() noexcept : state_{0, 0, 0, 0} {
 	std::random_device cppRandom;
 	uint64_t seed = cppRandom();
-	for (auto &eachS : state_){
+	for (auto &eachS : state_) {
 		seed += seedIncrement_;
 		uint64_t currentVal{seed};
 		currentVal = ( currentVal ^ (currentVal >> initShifts_[0]) ) * initMultipliers_[0];
@@ -167,7 +167,7 @@ RanDraw::RanDraw() noexcept : state_{0, 0, 0, 0} {
 
 RanDraw::RanDraw(const uint64_t &seed) noexcept : state_{0, 0, 0, 0} {
 	uint64_t locSeed{seed};
-	for (auto &eachS : state_){
+	for (auto &eachS : state_) {
 		locSeed += seedIncrement_;
 		uint64_t lsCopy{locSeed};
 		lsCopy = (lsCopy ^ (lsCopy >> initShifts_[0])) * initMultipliers_[0];
@@ -197,9 +197,9 @@ uint64_t RanDraw::sampleInt(const uint64_t &max) noexcept {
 	uint64_t bigRanInt = this->ranInt();
 	__uint128_t prod   = static_cast<__uint128_t>(bigRanInt) * max128;
 	auto prod64        = static_cast<uint64_t>(prod);
-	if (prod64 < max){
+	if (prod64 < max) {
 		const uint64_t test = (-max) % max;
-		while (prod64 < test){
+		while (prod64 < test) {
 			bigRanInt = this->ranInt();
 			prod      = static_cast<__uint128_t>(bigRanInt) * max128;
 			prod64    = static_cast<uint64_t>(prod);
@@ -216,15 +216,15 @@ uint64_t RanDraw::sampleInt(const uint64_t &min, const uint64_t &max) noexcept {
 
 std::vector<size_t> RanDraw::fyIndexesDown(const size_t &Nidx) {
 	std::vector<size_t> perInd(Nidx - 1);
-	std::iota(perInd.begin(), perInd.end(), 1UL);
-	std::for_each(perInd.rbegin(), perInd.rend(), [this](size_t &elm){elm = this->sampleInt(elm + 1);}); // sampleInt is < max
+	std::iota(perInd.rbegin(), perInd.rend(), 2UL);  // "starting" (really ending) with 2 to have 0 <= j <= i (b/c sampleInt is < max)
+	std::for_each(perInd.begin(), perInd.end(), [this](size_t &elm) {elm = this->sampleInt(elm);});
 	return perInd;
 }
 
 std::vector<size_t> RanDraw::fyIndexesUp(const size_t &Nidx) {
 	std::vector<size_t> perInd(Nidx - 1);
 	std::iota(perInd.begin(), perInd.end(), 0UL);
-	std::for_each(perInd.begin(), perInd.end(), [this, &Nidx](size_t &elm){elm = this->sampleInt(elm, Nidx);});
+	std::for_each(perInd.begin(), perInd.end(), [this, &Nidx](size_t &elm) {elm = this->sampleInt(elm, Nidx);});
 	return perInd;
 }
 
@@ -237,7 +237,7 @@ double RanDraw::rnorm() noexcept {
 	constexpr uint64_t maxJind{16777216};
 	constexpr uint64_t mask127{0x7f};
 
-	while (true){
+	while (true) {
 		iIdx  = this->ranInt() & mask255;                // choose the step
 		jIdx  = this->ranInt() % maxJind;                // sample from 2^24
 
@@ -245,19 +245,19 @@ double RanDraw::rnorm() noexcept {
 		iIdx &= mask127;                                 // convert iIdx to [0, 127], an index into the ziggurat slices
 
 		absValue = static_cast<double>(jIdx) * wtab_.at(iIdx);
-		if ( jIdx < ktab_.at(iIdx) ){ // ktab_ is used to test for acceptance without floating point operations
+		if ( jIdx < ktab_.at(iIdx) ) { // ktab_ is used to test for acceptance without floating point operations
 			break;
 		}
 		double ySample{0.0};
-		if ( iIdx < (ytab_.size() - 1) ){
+		if ( iIdx < (ytab_.size() - 1) ) {
 			ySample = ytab_.at(iIdx + 1) + ( ytab_.at(iIdx) - ytab_.at(iIdx + 1) ) * ( this->runifno() );
 		} else {
 			double unif1 = this->runifnz(); // (0,1]
 			double unif2 = this->runifno(); // [0,1)
-			absValue = paramR_ - log(unif1) / paramR_;
-			ySample = exp( -paramR_ * (absValue - 0.5 * paramR_) ) * unif2;
+			absValue     = paramR_ - log(unif1) / paramR_;
+			ySample      = exp( -paramR_ * (absValue - 0.5 * paramR_) ) * unif2;
 		}
-		if ( ySample < exp(-0.5 * absValue * absValue) ){
+		if ( ySample < exp(-0.5 * absValue * absValue) ) {
 			break;
 		}
 	}
@@ -266,10 +266,10 @@ double RanDraw::rnorm() noexcept {
 }
 
 double RanDraw::rgamma(const double &alpha) noexcept {
-	if (alpha <= 0.0){
+	if (alpha <= 0.0) {
 		return nan("");
 	}
-	if (alpha < 1.0){
+	if (alpha < 1.0) {
 		return this->rgamma(alpha + 1.0) * pow(this->runifop(), 1.0 / alpha);
 	}
 	constexpr double oneThird{0.3333333333};
@@ -280,20 +280,25 @@ double RanDraw::rgamma(const double &alpha) noexcept {
 	double shiftedAlpha{alpha - oneThird};
 	const double normSD{oneThird / sqrt(shiftedAlpha)};
 
-	while (true){
-		do {
+	while (true) {
+		if (scaledNorm > 0.0) {
 			stdNorm    = this->rnorm();
 			scaledNorm = 1.0 + normSD * stdNorm;
-		} while (scaledNorm <= 0.0);
+		} else {
+			while (scaledNorm <= 0.0) {
+				stdNorm    = this->rnorm();
+				scaledNorm = 1.0 + normSD * stdNorm;
+			}
+		}
 
 		scaledNorm = scaledNorm * scaledNorm * scaledNorm;
 		unifSample = this->runifop();
 		const double stdNormSq = {stdNorm * stdNorm};
 
-		if (unifSample < 1.0 - smallMultiplier * stdNormSq * stdNormSq){
+		if (unifSample < 1.0 - smallMultiplier * stdNormSq * stdNormSq) {
 			break;
 		}
-		if ( log(unifSample) < 0.5 * stdNormSq + shiftedAlpha * ( 1.0 - scaledNorm + log(scaledNorm) ) ){
+		if ( log(unifSample) < 0.5 * stdNormSq + shiftedAlpha * ( 1.0 - scaledNorm + log(scaledNorm) ) ) {
 			break;
 		}
 	}
@@ -302,15 +307,28 @@ double RanDraw::rgamma(const double &alpha) noexcept {
 }
 
 std::vector<double> RanDraw::rdirichlet(const std::vector<double> &alpha) {
-	double sum{0.0};
-	std::vector<double> probabilities;
-	probabilities.reserve( alpha.size() );
-	for (const auto &eachAlpha : alpha){
-		probabilities.push_back( this->rgamma(eachAlpha) );
-		sum += probabilities.back();
+	assert( (alpha.size() >= 2) &&
+		"ERROR: must have two or more alpha values in RanDraw::rdirichlet()" );
+
+	std::vector<double> probabilities = alpha;
+	std::for_each(probabilities.begin(), probabilities.end() - 1,
+		[this](double &prob){prob = this->rgamma(prob);});
+	double sum = std::accumulate(probabilities.cbegin(), probabilities.cend() - 1, 0.0);
+	sum += this->rgamma( probabilities.back() );
+
+	if (std::isnan(sum)) {
+		std::fill(probabilities.begin(), probabilities.end(), nan(""));
+		return probabilities;
 	}
-	for (auto &eachP : probabilities){
-		eachP = eachP / sum;
+
+	std::for_each(probabilities.begin(), probabilities.end() - 1,
+		[sum](double &prob){prob = prob / sum;});
+	sum = std::accumulate(probabilities.cbegin(), probabilities.cend() - 1, 0.0);
+
+	if (sum >= 1.0) {
+		probabilities.back() = 0.0;
+	} else {
+		probabilities.back() = 1.0 - sum;
 	}
 	return probabilities;
 }
@@ -321,15 +339,15 @@ uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept
 	double quot{top / Nremain};
 
 	// some trivial conditions first
-	if ( (nToPick == 0) || (nToPick > Nremain) ){
+	if ( (nToPick == 0) || (nToPick > Nremain) ) {
 		return sample;
 	}
-	if (nToPick == 1){
+	if (nToPick == 1) {
 		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
 	}
 	const double unifSample{this->runifop()};
 	double Nloc{Nremain};
-	while (quot > unifSample){
+	while (quot > unifSample) {
 		++sample;
 		--top;
 		--Nloc;
@@ -343,10 +361,10 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 	// Notation is as close as possible to Vitter (1987), Appendix A2
 	uint64_t sample{0};
 	const double alphaInv{13.0};
-	if (nToPick >= Nremain / alphaInv){ // if the threshold is not satisfied, use Vitter's A algorithm
+	if (nToPick >= Nremain / alphaInv) { // if the threshold is not satisfied, use Vitter's A algorithm
 		return this->vitterA(nToPick, Nremain);
 	}
-	if (nToPick == 1){ // trivial case
+	if (nToPick == 1) { // trivial case
 		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
 	}
 
@@ -357,7 +375,7 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 	const auto qu1{static_cast<uint64_t>(qu1db)};
 
 	// outer loop in Vitter (1987) A2
-	while (true){
+	while (true) {
 		double roofSample{0.0};                  // covering distribution sample for rejection
 		double Vprime{0.0};
 		do {  // step D2; generate U and X
@@ -369,7 +387,7 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 		const auto dSample{static_cast<double>(sample)};
 		const double y1sample{pow(this->runifop() * Nremain / qu1db, nMin1inv)};
 		Vprime = y1sample * (1.0 - roofSample / Nremain) * ( qu1db / (qu1db - dSample) );
-		if (Vprime < 1.0){ // Step D3: accept test 2.8 (Vitter 1987)
+		if (Vprime < 1.0) { // Step D3: accept test 2.8 (Vitter 1987)
 			break;
 		}
 		// moving on to Step D4
@@ -377,7 +395,7 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 		double top{Nremain - 1.0};
 		double bottom{0.0};
 		uint64_t limit{0};
-		if (dSample < nToPick - 1.0){
+		if (dSample < nToPick - 1.0) {
 			bottom = Nremain - nToPick;
 			limit  = static_cast<uint64_t>(Nremain - dSample);
 		} else {
@@ -387,13 +405,13 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 
 		// calculate f(|_X_|)
 		auto loopVar = static_cast<uint64_t>(Nremain - 1.0);
-		while (loopVar >= limit){
+		while (loopVar >= limit) {
 			y2sample *= top / bottom;
 			top      -= 1.0;
 			bottom   -= 1.0;
 			--loopVar;
 		}
-		if ( Nremain / (Nremain - roofSample) >= y1sample * pow(y2sample, nMin1inv) ){ // Accept D4 condition
+		if ( Nremain / (Nremain - roofSample) >= y1sample * pow(y2sample, nMin1inv) ) { // Accept D4 condition
 			break;
 		}
 		// reject everything, go back to the start

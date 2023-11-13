@@ -97,7 +97,7 @@ namespace BayesicSpace {
 		 * \param[in] max the maximal value (does not appear in the sample)
 		 * \return sampled value
 		 */
-		uint64_t sampleInt(const uint64_t &max) noexcept;
+		[[nodiscard]] uint64_t sampleInt(const uint64_t &max) noexcept;
 		/** \brief Sample and integer from the \f$ [m, n) \f$ interval
 		 *
 		 * _m_ must be no larger than _n_. This is only checked (via `assert()`) when in debug or testing mode.
@@ -106,7 +106,7 @@ namespace BayesicSpace {
 		 * \param[in] max the maximal value \f$n\f$ (does not appear in the sample)
 		 * \return sampled value
 		 */
-		uint64_t sampleInt(const uint64_t &min, const uint64_t &max) noexcept;
+		[[nodiscard]] uint64_t sampleInt(const uint64_t &min, const uint64_t &max) noexcept;
 		/** \brief Sample Fisher-Yates indexes from the top
 		 *
 		 * Uses the Fisher-Yates-Durstenfeld algorithm from the end of the sequence to produce indexes in \f$ [0, N) \f$ for shuffling.
@@ -116,7 +116,7 @@ namespace BayesicSpace {
 		 *
 		 * \return vector of \f$ N - 1 \f$ shuffling indexes
 		 */
-		std::vector<size_t> fyIndexesDown(const size_t &Nidx);
+		[[nodiscard]] std::vector<size_t> fyIndexesDown(const size_t &Nidx);
 		/** \brief Sample Fisher-Yates indexes from the bottom
 		 *
 		 * Uses the Fisher-Yates-Durstenfeld algorithm from the beginning of the sequence to produce indexes in \f$ [0, N) \f$ for shuffling.
@@ -126,35 +126,36 @@ namespace BayesicSpace {
 		 *
 		 * \return vector of \f$ N - 1 \f$ shuffling indexes
 		 */
-		std::vector<size_t> fyIndexesUp(const size_t &Nidx);
+		[[nodiscard]] std::vector<size_t> fyIndexesUp(const size_t &Nidx);
 
 		/** \brief Generate a uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U[0,1]\f$ distribution
 		 */
-		double runif() noexcept {return  static_cast<double>(this->ranInt() >> unifShifts_[0]) / unifDivisors_[0]; };
+		[[nodiscard]] double runif() noexcept {return  static_cast<double>(this->ranInt() >> unifShifts_[0]) / unifDivisors_[0]; };
 		/** \brief Generate a non-zero uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1]\f$ distribution
 		 */
-		double runifnz() noexcept {return  (static_cast<double>(this->ranInt() >> unifShifts_[1]) + 0.5) / unifDivisors_[1]; };
+		[[nodiscard]] double runifnz() noexcept {return  (static_cast<double>(this->ranInt() >> unifShifts_[1]) + 0.5) / unifDivisors_[1]; };
 		/** \brief Generate a non-one uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U[0,1)\f$ distribution
 		 */
-		double runifno() noexcept {return  static_cast<double>(this->ranInt() >> unifShifts_[0]) / unifDivisors_[2]; };
+		[[nodiscard]] double runifno() noexcept {return  static_cast<double>(this->ranInt() >> unifShifts_[0]) / unifDivisors_[2]; };
 		/** \brief Generate an open-interval uniform deviate
 		 *
 		 * \return A double-precision value from the \f$ U(0,1)\f$ distribution
 		 */
-		double runifop() noexcept {return  (static_cast<double>(this->ranInt() >> unifShifts_[1]) + 0.5) / unifDivisors_[3]; };
+		[[nodiscard]] double runifop() noexcept {return  (static_cast<double>(this->ranInt() >> unifShifts_[1]) + 0.5) / unifDivisors_[3]; };
 		/** \brief A standard Gaussian deviate
 		 *
-		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma = 1.0 \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
+		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma = 1.0 \f$.
+		 * Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
 		 *
 		 * \return a sample from the standard Gaussian distribution
 		 */
-		double rnorm() noexcept;
+		[[nodiscard]] double rnorm() noexcept;
 		/** \brief A zero-mean Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu = 0.0 \f$ and standard deviation \f$ \sigma \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -162,7 +163,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the zero-mean Gaussian distribution
 		 */
-		double rnorm(const double &sigma) noexcept { return this->rnorm() * sigma; };
+		[[nodiscard]] double rnorm(const double &sigma) noexcept { return this->rnorm() * sigma; };
 		/** \brief A Gaussian deviate
 		 *
 		 * Generates a Gaussian random value with mean \f$ \mu \f$ and standard deviation \f$ \sigma \f$. Implemented using a version of the Marsaglia and Tsang (2000) ziggurat algorithm, modified according to suggestions in the GSL implementation of the function.
@@ -171,7 +172,7 @@ namespace BayesicSpace {
 		 * \param[in] sigma standard deviation
 		 * \return a sample from the Gaussian distribution
 		 */
-		double rnorm(const double &mean, const double &sigma) noexcept { return mean + this->rnorm() * sigma; };
+		[[nodiscard]] double rnorm(const double &mean, const double &sigma) noexcept { return mean + this->rnorm() * sigma; };
 		/** \brief A standard Gamma deviate
 		 *
 		 * Generates a Gamma random variable with shape \f$ \alpha > 0 \f$ and standard scale \f$ \beta = 1.0 \f$. Implements the Marsaglia and Tsang (2000) method.
@@ -179,7 +180,7 @@ namespace BayesicSpace {
 		 * \param[in] alpha shape parameter \f$ \alpha \f$
 		 * \return a sample from the standard Gamma distribution
 		 */
-		double rgamma(const double &alpha) noexcept;
+		[[nodiscard]] double rgamma(const double &alpha) noexcept;
 		/** \brief A general Gamma deviate
 		 *
 		 * Generates a Gamma random variable with shape \f$ \alpha > 0 \f$ and scale \f$ \beta > 0 \f$.
@@ -188,7 +189,7 @@ namespace BayesicSpace {
 		 * \param[in] beta scale parameter \f$ \beta \f$
 		 * \return a sample from the general Gamma distribution
 		 */
-		double rgamma(const double &alpha, const double &beta) noexcept { return beta > 0.0 ? ( this->rgamma(alpha) ) / beta : nan(""); };
+		[[nodiscard]] double rgamma(const double &alpha, const double &beta) noexcept { return beta > 0.0 ? ( this->rgamma(alpha) ) / beta : nan(""); };
 		/** \brief A Dirichlet deviate
 		 *
 		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
@@ -196,7 +197,7 @@ namespace BayesicSpace {
 		 * \param[in] alpha vector of concentration parameters
 		 * \return vector of probabilities, will be the same length as `alpha`.
 		 */
-		std::vector<double> rdirichlet(const std::vector<double> &alpha);
+		[[nodiscard]] std::vector<double> rdirichlet(const std::vector<double> &alpha);
 		/** \brief A chi-square deviate
 		 *
 		 * Generates a \f$ \chi^2 \f$ random variable with degrees of freedom \f$ \nu > 0.0 \f$.
@@ -204,10 +205,11 @@ namespace BayesicSpace {
 		 * \param[in] degFreedom degrees of freedom
 		 * \return a sample from the \f$ \chi^2 \f$ distribution
 		 */
-		double rchisq(const double &degFreedom) noexcept { return 2.0 * this->rgamma(degFreedom * 0.5); };
+		[[nodiscard]] double rchisq(const double &degFreedom) noexcept { return 2.0 * this->rgamma(degFreedom * 0.5); };
 		/** \brief Sample from Vitter's distribution, method A
 		 *
-		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over. This function implements Vitter's \cite vitter84a \cite vitter87a method A. It is useful for online one-pass sampling of records from a file.
+		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
+		 * This function implements Vitter's \cite vitter84a \cite vitter87a method A. It is useful for online one-pass sampling of records from a file.
 		 * While the inputs are integer, we pass them in as _double_ because that is more efficient for calculations.
 		 *
 		 * \param[in] nToPick number of records remaining to be picked
@@ -215,10 +217,11 @@ namespace BayesicSpace {
 		 *
 		 * \return the number of records to skip
 		 */
-		uint64_t vitterA(const double &nToPick, const double &Nremain) noexcept;
+		[[nodiscard]] uint64_t vitterA(const double &nToPick, const double &Nremain) noexcept;
 		/** \brief Sample from Vitter's distribution, method D
 		 *
-		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over. This function implements Vitter's \cite vitter84a \cite vitter87a method D. It is useful for online one-pass sampling of records from a file.
+		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
+		 * This function implements Vitter's \cite vitter84a \cite vitter87a method D. It is useful for online one-pass sampling of records from a file.
 		 * While the inputs are integer, we pass them in as _double_ because that is more efficient for calculations.
 		 *
 		 * \param[in] nToPick number of records remaining to be picked
@@ -226,7 +229,7 @@ namespace BayesicSpace {
 		 *
 		 * \return the number of records to skip
 		 */
-		uint64_t vitter(const double &nToPick, const double &Nremain) noexcept;
+		[[nodiscard]] uint64_t vitter(const double &nToPick, const double &Nremain) noexcept;
 	private:
 		/** \brief xoshiro256++ state array */
 		std::array<uint64_t, 4> state_;
