@@ -30,8 +30,9 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <vector>
+#include <array>
 
 namespace BayesicSpace {
 	/** \brief Numerical utilities collection
@@ -120,9 +121,9 @@ namespace BayesicSpace {
 
 	private:
 		/** \brief Gamma function magical coefficients */
-		static const double gCoeff_[14];
+		static const std::array<double, 14> gCoeff_;
 		/** \brief Bernoulli numbers */
-		static const double bvalues_[22];
+		static const std::array<double, 22> bvalues_;
 	};
 }
 

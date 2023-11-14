@@ -189,8 +189,8 @@ namespace BayesicSpace {
 		 * \param[in] beta scale parameter \f$ \beta \f$
 		 * \return a sample from the general Gamma distribution
 		 */
-		[[nodiscard]] double rgamma(const double &alpha, const double &beta) noexcept { return beta > 0.0 ? ( this->rgamma(alpha) ) / beta : nan(""); };
-		/** \brief A Dirichlet deviate
+		[[nodiscard]] double rgamma(const double &alpha, const double &beta) noexcept { return beta > sqrtDoubleMin_ ? ( this->rgamma(alpha) ) / beta : nan(""); };
+		/** \brief Dirichlet deviates
 		 *
 		 * Generates a vector of probabilities, given a vector of concentration parameters \f$ \alpha_K > 0 \f$.
 		 *
@@ -206,22 +206,10 @@ namespace BayesicSpace {
 		 * \return a sample from the \f$ \chi^2 \f$ distribution
 		 */
 		[[nodiscard]] double rchisq(const double &degFreedom) noexcept { return 2.0 * this->rgamma(degFreedom * 0.5); };
-		/** \brief Sample from Vitter's distribution, method A
-		 *
-		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
-		 * This function implements Vitter's \cite vitter84a \cite vitter87a method A. It is useful for online one-pass sampling of records from a file.
-		 * While the inputs are integer, we pass them in as _double_ because that is more efficient for calculations.
-		 *
-		 * \param[in] nToPick number of records remaining to be picked
-		 * \param[in] Nremain number of remaining records in the file
-		 *
-		 * \return the number of records to skip
-		 */
-		[[nodiscard]] uint64_t vitterA(const double &nToPick, const double &Nremain) noexcept;
 		/** \brief Sample from Vitter's distribution, method D
 		 *
-		 * Given the number of remaining records in a file \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
-		 * This function implements Vitter's \cite vitter84a \cite vitter87a method D. It is useful for online one-pass sampling of records from a file.
+		 * Given the number of remaining records \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
+		 * This function implements Vitter's \cite vitter84a \cite vitter87a method D. It is useful for online one-pass sampling of records, e.g. from a file.
 		 * While the inputs are integer, we pass them in as _double_ because that is more efficient for calculations.
 		 *
 		 * \param[in] nToPick number of records remaining to be picked
@@ -243,6 +231,8 @@ namespace BayesicSpace {
 		static const std::array<uint64_t, 3> riShifts_;
 
 		// Constants for distributions
+		/** \brief Square root of the minimal `double` */
+		static const double sqrtDoubleMin_;
 		/** \brief `uint64_t` length in bits */
 		static const uint64_t llWordLen_;
 		/** \brief Divisors for `runif` */
@@ -268,6 +258,27 @@ namespace BayesicSpace {
 		 * Used for the Gaussian ziggurat algorithm.
 		 */
 		static const std::array<double, 128> wtab_;
+		/** \brief Dirichlet deviates for small \f$ \alpha_K \f$
+		 *
+		 * Generates a vector of probabilities, controlling for underflow, given a vector of small concentration parameters \f$ \alpha_K > 0 \f$.
+		 * Modification of the implementation in [GSL](https://www.gnu.org/software/gsl/doc/html/randist.html#c.gsl_ran_dirichlet).
+		 *
+		 * \param[in] alpha vector of concentration parameters
+		 * \return vector of probabilities, will be the same length as `alpha`.
+		 */
+		[[nodiscard]] std::vector<double> rdirichletSmall_(const std::vector<double> &alpha);
+		/** \brief Sample from Vitter's distribution, method A
+		 *
+		 * Given the number of remaining records \f$N\f$ and the number of records \f$n\f$ remaining to be selected, sample the number of records to skip over.
+		 * This function implements Vitter's \cite vitter84a \cite vitter87a method A. It is useful for online one-pass sampling of records, e.g. from a file.
+		 * While the inputs are integer, we pass them in as _double_ because that is more efficient for calculations.
+		 *
+		 * \param[in] nToPick number of records remaining to be picked
+		 * \param[in] Nremain number of remaining records in the file
+		 *
+		 * \return the number of records to skip
+		 */
+		[[nodiscard]] uint64_t vitterA_(const double &nToPick, const double &Nremain) noexcept;
 	};
 
 }

@@ -30,6 +30,7 @@
 #include <cstdint>
 #include <cmath>
 #include <algorithm>
+#include <numeric>
 #include <ratio>
 #include <vector>
 #include <array>
@@ -161,6 +162,52 @@ TEST_CASE("Random number generator works properly", "[prng]") {
 		// Dirichlet
 		constexpr size_t nClasses{11};
 		constexpr double eachConc{0.45};
-		std::vector<double> concentrations{nClasses, eachConc};
+		constexpr double tinyConc{1e-5};
+
+		std::vector<double> concentrations(nClasses, eachConc);
+		const std::vector<double> dirProbs{unseededPRNG.rdirichlet(concentrations)};
+		REQUIRE(std::all_of(dirProbs.cbegin(), dirProbs.cend(), [](double prob){return prob <= 1.0;}));
+		REQUIRE(std::all_of(dirProbs.cbegin(), dirProbs.cend(), [](double prob){return prob >= 0.0;}));
+		const auto pSum = std::accumulate(dirProbs.cbegin(), dirProbs.cend(), 0.0);
+		REQUIRE(fabs(1.0 - pSum) < DPREC);
+
+		for (size_t iConc = 0; iConc < concentrations.size(); ++iConc) { // if any alpha is 0.0, should return all NaNs
+			std::vector<double> locConc = concentrations;
+			locConc.at(iConc) = 0.0;
+			const std::vector<double> locProb{unseededPRNG.rdirichlet(locConc)};
+			REQUIRE(std::all_of(locProb.cbegin(), locProb.cend(), [](double prob){return std::isnan(prob);}));
+		}
+
+		// testing the underflow situation
+		std::fill(concentrations.begin(), concentrations.end(), tinyConc);
+		std::vector<double> dirProbsTiny{seededPRNG.rdirichlet(concentrations)};
+		REQUIRE(std::all_of(dirProbsTiny.cbegin(), dirProbsTiny.cend(), [](double prob){return prob <= 1.0;}));
+		REQUIRE(std::all_of(dirProbsTiny.cbegin(), dirProbsTiny.cend(), [](double prob){return prob >= 0.0;}));
+		const auto tPsum = std::accumulate(dirProbsTiny.cbegin(), dirProbsTiny.cend(), 0.0);
+		REQUIRE(fabs(1.0 - tPsum) < DPREC);
+
+		// Chi-squared
+		constexpr double degFreedom{3.0};
+		constexpr double correctChiSq{1.89286};
+		REQUIRE(fabs( correctChiSq - seededPRNG.rchisq(degFreedom) ) < DPREC);
+		REQUIRE(std::isnan( unseededPRNG.rchisq(0.0) ));
+
+		// Vitter
+		constexpr double nLeft{100.0};
+		constexpr uint64_t nLeftUI{100UL};
+		constexpr double nToPic{5.0};
+		constexpr double nToPicA{20.0}; // forces VitterA
+		constexpr uint64_t correctVitter{46};
+		REQUIRE( correctVitter == seededPRNG.vitter(nToPic, nLeft) );
+		constexpr uint64_t correctVitterA{1};
+		REQUIRE( correctVitterA == seededPRNG.vitter(nToPicA, nLeft) );
+
+		std::array<uint64_t, N_DEVIATES> vitterArray{0UL};
+		std::for_each(vitterArray.begin(), vitterArray.end(), 
+				[&unseededPRNG, nToPic, nLeft](uint64_t &sample){sample = unseededPRNG.vitter(nToPic, nLeft);});
+		REQUIRE(std::all_of(vitterArray.cbegin(), vitterArray.cend(), [nLeftUI](uint64_t sample){return sample < nLeftUI;}));
+		std::for_each(vitterArray.begin(), vitterArray.end(), 
+				[&unseededPRNG, nToPicA, nLeft](uint64_t &sample){sample = unseededPRNG.vitter(nToPicA, nLeft);});
+		REQUIRE(std::all_of(vitterArray.cbegin(), vitterArray.cend(), [nLeftUI](uint64_t sample){return sample < nLeftUI;}));
 	}
 }

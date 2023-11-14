@@ -28,8 +28,10 @@
  */
 
 #include <array>
+#include <utility>
 #include <vector>
 #include <algorithm>
+#include <limits>
 #include <cmath>
 #include <numeric>
 #include <cassert>
@@ -45,6 +47,7 @@ constexpr std::array<uint64_t, 2> RanDraw::initMultipliers_{0xbf58476d1ce4e5b9, 
 constexpr std::array<uint64_t, 2> RanDraw::initShifts_{30, 27};
 constexpr std::array<uint64_t, 3> RanDraw::riShifts_{17, 45, 19};
 
+constexpr double RanDraw::sqrtDoubleMin_{std::numeric_limits<double>::min()};
 constexpr uint64_t RanDraw::llWordLen_{64};
 constexpr std::array<double, 4> RanDraw::unifDivisors_{9007199254740991.0, 4503599627370495.5, 9007199254740992.0, 4503599627370496.0};
 constexpr std::array<uint64_t, 2> RanDraw::unifShifts_{11, 12};
@@ -266,7 +269,7 @@ double RanDraw::rnorm() noexcept {
 }
 
 double RanDraw::rgamma(const double &alpha) noexcept {
-	if (alpha <= 0.0) {
+	if (alpha <= sqrtDoubleMin_) {
 		return nan("");
 	}
 	if (alpha < 1.0) {
@@ -311,58 +314,32 @@ std::vector<double> RanDraw::rdirichlet(const std::vector<double> &alpha) {
 		"ERROR: must have two or more alpha values in RanDraw::rdirichlet()" );
 
 	std::vector<double> probabilities = alpha;
-	std::for_each(probabilities.begin(), probabilities.end() - 1,
+	std::for_each(probabilities.begin(), probabilities.end(),
 		[this](double &prob){prob = this->rgamma(prob);});
-	double sum = std::accumulate(probabilities.cbegin(), probabilities.cend() - 1, 0.0);
-	sum += this->rgamma( probabilities.back() );
+	const auto norm = std::accumulate(probabilities.cbegin(), probabilities.cend(), 0.0);
 
-	if (std::isnan(sum)) {
+	if (std::isnan(norm)) {
 		std::fill(probabilities.begin(), probabilities.end(), nan(""));
 		return probabilities;
 	}
 
-	std::for_each(probabilities.begin(), probabilities.end() - 1,
-		[sum](double &prob){prob = prob / sum;});
-	sum = std::accumulate(probabilities.cbegin(), probabilities.cend() - 1, 0.0);
-
-	if (sum >= 1.0) {
-		probabilities.back() = 0.0;
-	} else {
-		probabilities.back() = 1.0 - sum;
+	if (norm < sqrtDoubleMin_) { // underflow
+		probabilities = std::move( this->rdirichletSmall_(alpha) );
+		return probabilities;
 	}
+
+	std::for_each(probabilities.begin(), probabilities.end(),
+		[norm](double &prob){prob = prob / norm;});
+
 	return probabilities;
-}
-
-uint64_t RanDraw::vitterA(const double &nToPick, const double &Nremain) noexcept {
-	uint64_t sample{0};
-	double top{Nremain - nToPick};
-	double quot{top / Nremain};
-
-	// some trivial conditions first
-	if ( (nToPick == 0) || (nToPick > Nremain) ) {
-		return sample;
-	}
-	if (nToPick == 1) {
-		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
-	}
-	const double unifSample{this->runifop()};
-	double Nloc{Nremain};
-	while (quot > unifSample) {
-		++sample;
-		--top;
-		--Nloc;
-		quot = quot * top / Nloc;
-	}
-
-	return sample;
 }
 
 uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept {
 	// Notation is as close as possible to Vitter (1987), Appendix A2
 	uint64_t sample{0};
 	const double alphaInv{13.0};
-	if (nToPick >= Nremain / alphaInv) { // if the threshold is not satisfied, use Vitter's A algorithm
-		return this->vitterA(nToPick, Nremain);
+	if (nToPick * alphaInv >= Nremain) { // if the threshold is not satisfied, use Vitter's A algorithm
+		return this->vitterA_(nToPick, Nremain);
 	}
 	if (nToPick == 1) { // trivial case
 		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
@@ -378,7 +355,9 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 	while (true) {
 		double roofSample{0.0};                  // covering distribution sample for rejection
 		double Vprime{0.0};
-		do {  // step D2; generate U and X
+		// step D2; generate U and X
+		// the do-while loop is safe because we are not indexing anything, so no memory bugs
+		do { // NOLINT
 			Vprime     = pow(this->runifop(), nInv); // same as exp(log(u)*nInv)
 			roofSample = Nremain * (1.0 - Vprime);
 			sample     = static_cast<uint64_t>( floor(roofSample) );
@@ -416,6 +395,54 @@ uint64_t RanDraw::vitter(const double &nToPick, const double &Nremain) noexcept 
 		}
 		// reject everything, go back to the start
 	}
+	return sample;
+}
+
+std::vector<double> RanDraw::rdirichletSmall_(const std::vector<double> &alpha) {
+	std::vector<double> probabilities = alpha;
+
+	std::for_each(probabilities.begin(), probabilities.end(),
+		[this](double &prob){prob = log( this->runifop() / prob);});
+
+	const auto umax = std::max_element( probabilities.cbegin(), probabilities.cend() );
+
+	std::for_each(probabilities.begin(), probabilities.end(),
+		[umax](double &prob){prob = exp( prob - (*umax) );});
+
+	const auto norm = std::accumulate(probabilities.cbegin(), probabilities.cend(), 0.0);
+
+	if (std::isnan(norm)) {
+		std::fill(probabilities.begin(), probabilities.end(), nan(""));
+		return probabilities;
+	}
+
+	std::for_each(probabilities.begin(), probabilities.end(),
+		[norm](double &prob){prob = prob / norm;});
+
+	return probabilities;
+}
+
+uint64_t RanDraw::vitterA_(const double &nToPick, const double &Nremain) noexcept {
+	uint64_t sample{0};
+	double top{Nremain - nToPick};
+	double quot{top / Nremain};
+
+	// some trivial conditions first
+	if ( (nToPick == 0) || (nToPick > Nremain) ) {
+		return sample;
+	}
+	if (nToPick == 1) {
+		return static_cast<uint64_t>( floor( Nremain * this->runifop() ) );
+	}
+	const double unifSample{this->runifop()};
+	double Nloc{Nremain};
+	while (quot > unifSample) {
+		++sample;
+		--top;
+		--Nloc;
+		quot = quot * top / Nloc;
+	}
+
 	return sample;
 }
 
