@@ -23,8 +23,7 @@
  * \copyright Copyright (c) 2020 -- 2022 Anthony J. Greenberg
  * \version 1.0
  *
- * Class definition for a set of numerical utilities.
- * Implemented as a class because this seems to be the only way for these methods to be included using Rcpp with no compilation errors.
+ * Function definitions for a set of numerical utilities.
  *
  */
 
@@ -35,65 +34,74 @@
 #include <array>
 
 namespace BayesicSpace {
-	/** \brief Numerical utilities collection
+	/** \brief Value and its weight
 	 *
-	 * Implements numerical functions for use throughout the project.
-	 *
+	 * Set for calculating weighted means.
 	 */
-	class NumerUtil {
-	public:
+	struct ValueWithWeight {
+		double value;
+		double weight;
+	};
 	/** \brief Swap two `size_t` values
 	 *
 	 * Uses the three XORs trick to swap two integers. Safe if the variables happen to refer to the same address.
 	 *
-	 * \param[in,out] i first integer
-	 * \param[in,out] j second integer
+	 * \param[in,out] first first integer
+	 * \param[in,out] second second integer
 	 */
-	void swapXOR(size_t &i, size_t &j) const noexcept;
+	void swapXOR(size_t &first, size_t &second) noexcept;
 	/** \brief Logit function
 	 *
-	 * \param[in] p probability in the (0, 1) interval
+	 * \param[in] probability probability in the (0, 1) interval
 	 * \return logit transformation
 	 */
-	double logit(const double &p) const noexcept { return log(p) - log(1.0 - p); }
+	[[nodiscard]] double logit(const double &probability) noexcept;
 	/** \brief Logistic function
 	 *
 	 * There is a guard against under- and overflow: the function returns 0.0 for \f$ x \le -35.0\f$ and 1.0 for \f$x \ge 35.0\f$.
 	 *
-	 * \param[in] x value to be projected to the (0, 1) interval
+	 * \param[in] input value to be projected to the (0, 1) interval
 	 * \return logistic transformation
 	 */
-	double logistic(const double &x) const noexcept;
+	[[nodiscard]] double logistic(const double &input) noexcept;
 	/** \brief Logarithm of the Gamma function
 	 *
 	 * The log of the \f$ \Gamma(x) \f$ function. Implementing the Lanczos algorithm following Numerical Recipes in C++.
 	 *
-	 * \param[in] x value
-	 * \return \f$ \log \Gamma(x) \f$
+	 * \param[in] input value
+	 * \return \f$ \log \Gamma(input) \f$
 	 *
 	 */
-	double lnGamma(const double &x) const noexcept;
+	[[nodiscard]] double lnGamma(const double &input) noexcept;
 	/** \brief Digamma function
 	 *
 	 * Defined only for \f$ x > 0 \f$, will return _NaN_ otherwise. Adopted from the `dpsifn` function in R.
 	 *
-	 * \param[in] x function argument (must be positive)
+	 * \param[in] input function argument (must be positive)
 	 * \return value of the digamma function
 	 */
-	double digamma(const double &x) const noexcept;
+	[[nodiscard]] double digamma(const double &input) noexcept;
 	/** \brief Vector self-dot-product
 	 *
-	 * \param[in] v vector
+	 * \param[in] begin first element iterator
+	 * \param[in] end one past the last element iterator
 	 * \return dot-product value
 	 */
-	double dotProd(const std::vector<double> &v) const noexcept;
-	/** \brief Dot-product of two vectors
+	[[nodiscard]] double dotProd(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
+	/** \brief Dot-product of two `double` vectors
 	 *
-	 * \param[in] v1 vector 1
-	 * \param[in] v2 vector 2
+	 * Throws if the second vector range goes past its end (the second vector reference is needed for the check).
+	 *
+	 * \param[in] firstBegin first vector start iterator
+	 * \param[in] firstEnd first vector end iterator 
+	 * \param[in] secondBegin second vector start iterator
+	 * \param[in] second second vector
 	 * \return dot-product value
 	 */
-	double dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const noexcept;
+	[[nodiscard]] double dotProd(std::vector<double>::const_iterator firstBegin,
+								std::vector<double>::const_iterator firstEnd,
+								std::vector<double>::const_iterator secondBegin,
+								const std::vector<double> &second);
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
@@ -102,28 +110,19 @@ namespace BayesicSpace {
 	 *     \bar{\mu}_n = \frac{\bar{\mu}_{n-1}\sum_{i=1}^{n-1}w_i + w_n x_n}{\sum_{i=1}^{n-1}w_i + w_n}
 	 * \f$
 	 *
-	 * \param[in] xn new point \f$ x_n \f$
-	 * \param[in] wn weight \f$ w_n \f$
-	 * \param[out] mu new mean
-	 * \param[out] w new weight
-	 *
+	 * \param[in] nextDataPoint new point \f$ x_n \f$ and \f$ w_n \f$
+	 * \param[in] currentMean mean and sum of weights up to the next point
+	 * \return new mean and sum of weights
 	 */
-	 void updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const noexcept;
-	/** \brief Mean of an array
+	 [[nodiscard]] ValueWithWeight updateWeightedMean(const ValueWithWeight &nextDataPoint, const ValueWithWeight &currentMean) noexcept;
+	/** \brief Mean of a vector of `double`
 	 *
 	 * Uses the numerically stable recursive algorithm.
 	 *
-	 * \param[in] arr c-style array of values
-	 * \param[in] len array length
+	 * \param[in] begin iterator to first element
+	 * \param[in] end iterator to one past the last element
 	 * \return mean value
 	 */
-	double mean(const double arr[], const size_t &len) const noexcept;
-
-	private:
-		/** \brief Gamma function magical coefficients */
-		static const std::array<double, 14> gCoeff_;
-		/** \brief Bernoulli numbers */
-		static const std::array<double, 22> bvalues_;
-	};
+	[[nodiscard]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 }
 

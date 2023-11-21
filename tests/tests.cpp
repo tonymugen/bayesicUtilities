@@ -49,7 +49,7 @@
 static constexpr uint16_t N_RAN_ITERATIONS{10};
 // precision for float comparisons
 static constexpr float FPREC{1e-4F};
-// precision for float comparisons
+// precision for double comparisons
 static constexpr double DPREC{1e-4};
 // number of distribution deviates to generate
 static constexpr size_t N_DEVIATES{1000};
@@ -211,3 +211,41 @@ TEST_CASE("Random number generator works properly", "[prng]") {
 		REQUIRE(std::all_of(vitterArray.cbegin(), vitterArray.cend(), [nLeftUI](uint64_t sample){return sample < nLeftUI;}));
 	}
 }
+
+TEST_CASE("Utilities work properly", "[util]") {
+	// swap
+	constexpr size_t testInt1{13};
+	constexpr size_t testInt2{47};
+	size_t swapTest1{testInt1};
+	size_t swapTest2{testInt2};
+	BayesicSpace::swapXOR(swapTest1, swapTest2);
+	REQUIRE(swapTest1 == testInt2);
+	REQUIRE(swapTest2 == testInt1);
+	BayesicSpace::swapXOR(swapTest1, swapTest1);
+	REQUIRE(swapTest1 == testInt2);
+
+	// logit
+	constexpr double negLogit{-0.1};
+	constexpr double gOneLogit{1.3};
+	constexpr double smallLogit{0.25};
+	constexpr double bigLogit{0.75};
+	constexpr double testLogit{0.815};
+	constexpr double correctTestLogit{1.48283};
+	REQUIRE(fabs( BayesicSpace::logit(0.5) ) <= DPREC);
+	REQUIRE(fabs( BayesicSpace::logit(smallLogit) + BayesicSpace::logit(bigLogit) ) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::logit(testLogit) - correctTestLogit) <= DPREC);
+	REQUIRE( std::isnan( BayesicSpace::logit(negLogit) ) );
+	REQUIRE( std::isnan( BayesicSpace::logit(gOneLogit) ) );
+
+	// logistic
+	constexpr double hugeLogistic{40.0};
+	constexpr double bigLogistic{10.0};
+	constexpr double niceLogistic{2.3};
+	REQUIRE(fabs(BayesicSpace::logistic(0.0) - 0.5) <= DPREC);
+	REQUIRE(BayesicSpace::logistic(hugeLogistic) == 1.0);
+	REQUIRE(BayesicSpace::logistic(-hugeLogistic) == 0.0);
+	REQUIRE(fabs(BayesicSpace::logistic(bigLogistic) + BayesicSpace::logistic(-bigLogistic) - 1.0) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::logistic(niceLogistic) + BayesicSpace::logistic(-niceLogistic) - 1.0) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::logistic( BayesicSpace::logit(testLogit) ) - testLogit) < DPREC);
+}
+

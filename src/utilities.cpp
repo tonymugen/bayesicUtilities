@@ -1,5 +1,5 @@
 /*
- * Copyright (c) <YEAR> Anthony J. Greenberg
+ * Copyright (c) 2020 Anthony J. Greenberg
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *
@@ -30,191 +30,211 @@
 
 #include <cstdint>
 #include <vector>
-#include <cmath>
+#include <array>
 #include <string>
+#include <algorithm>
+#include <numeric>
+#include <iterator>
+#include <cmath>
 #include <limits>
 #include <cassert>
 
 #include "utilities.hpp"
 
-using namespace BayesicSpace;
 
-const double NumerUtil::gCoeff_[14] {
-	57.1562356658629235,     59.5979603554754912,
-	14.1360979747417471,     -0.491913816097620199,
-	0.339946499848118887e-4,  0.465236289270485756e-4,
-	-0.983744753048795646e-4, 0.158088703224912494e-3,
-	-0.210264441724104883e-3, 0.217439618115212643e-3,
-	-0.164318106536763890e-3, 0.844182239838527433e-4,
-	-0.261908384015814087e-4, 0.368991826595316234e-5
-};
-const double NumerUtil::bvalues_[22] = {
-	1.00000000000000000e+00, -5.00000000000000000e-01,
-	1.66666666666666667e-01, -3.33333333333333333e-02,
-	2.38095238095238095e-02, -3.33333333333333333e-02,
-	7.57575757575757576e-02, -2.53113553113553114e-01,
-	1.16666666666666667e+00, -7.09215686274509804e+00,
-	5.49711779448621554e+01, -5.29124242424242424e+02,
-	6.19212318840579710e+03, -8.65802531135531136e+04,
-	1.42551716666666667e+06, -2.72982310678160920e+07,
-	6.01580873900642368e+08, -1.51163157670921569e+10,
-	4.29614643061166667e+11, -1.37116552050883328e+13,
-	4.88332318973593167e+14, -1.92965793419400681e+16
-};
-
-void NumerUtil::swapXOR(size_t &i, size_t &j) const noexcept {
-	if (&i != &j){ // no move needed if this is actually the same variable
-		i ^= j;
-		j ^= i;
-		i ^= j;
+void BayesicSpace::swapXOR(size_t &first, size_t &second) noexcept {
+	if (&first != &second) { // no move needed if this is actually the same variable
+		first  ^= second;
+		second ^= first;
+		first  ^= second;
 	}
 }
-double NumerUtil::logistic(const double &x) const noexcept {
+
+double BayesicSpace::logit(const double &probability) noexcept {
+	return log(probability) - log(1.0 - probability);
+}
+
+double BayesicSpace::logistic(const double &input) noexcept {
 	// 35.0 is the magic number because logistic(-35) ~ EPS
+	constexpr double cutOff{35.0};
+	constexpr double smallishCut{7.0};
 	// the other cut-offs have been empirically determined
-	if (x <= - 35.0){
+	if (input <= -cutOff) {
 		return 0.0;
-	} else if (x >= 35.0){
+	}
+	if (input >= cutOff) {
 		return 1.0;
-	} else if (x <= -7.0){ // approximation for smallish x
-		return exp(x);
-	} else if (x >= 3.5){  // approximation for largish x
-		return 1.0 - exp(-x);
-	} else {
-		return 1.0 / ( 1.0 + exp(-x) );
 	}
-}
-double NumerUtil::lnGamma(const double &x) const noexcept {
-	if (x <= 0.0) return nan("");
-
-	// define the weird magical coefficients
-	// save a copy of x for incrementing
-	double y     = x;
-	double gamma = 5.24218750000000000; // 671/128
-	double tmp   = x + gamma;
-	tmp          = (x + 0.5) * log(tmp) - tmp;
-	double logPi = 0.91893853320467267;  // 0.5*log(2.0*pi)
-	tmp         += logPi;
-	double cZero = 0.999999999999997092; // c_0
-
-	for (size_t i = 0; i < 14; i++) {
-		cZero += gCoeff_[i] / (++y);
+	if (input <= -smallishCut) { // approximation for smallish x
+		return exp(input);
 	}
-
-	return tmp + log(cZero / x);
+	if (input >= smallishCut/2.0) {  // approximation for largish x
+		return 1.0 - exp(-input);
+	}
+	return 1.0 / ( 1.0 + exp(-input) );
 }
-double NumerUtil::digamma(const double &x) const noexcept {
-#ifndef NDEBUG
-	const int32_t nMax = 100;
-#endif
-	if (x <= 0.0){
+
+double BayesicSpace::lnGamma(const double &input) noexcept {
+	if (input <= 0.0) {
 		return nan("");
 	}
-	if ( isnan(x) ){
-		return x;
+
+	constexpr std::array<double, 14> gCoeff {
+		57.1562356658629235,     59.5979603554754912,
+		14.1360979747417471,     -0.491913816097620199,
+		0.339946499848118887e-4,  0.465236289270485756e-4,
+		-0.983744753048795646e-4, 0.158088703224912494e-3,
+		-0.210264441724104883e-3, 0.217439618115212643e-3,
+		-0.164318106536763890e-3, 0.844182239838527433e-4,
+		-0.261908384015814087e-4, 0.368991826595316234e-5
+	};
+
+	// define the weird magical coefficients
+	constexpr double gamma{5.24218750000000000};      // 671/128
+	constexpr double logPi{0.91893853320467267};      // 0.5*log(2.0*pi)
+	constexpr double cZeroInit{0.999999999999997092}; // c_0
+	double tmp = input + gamma;
+	tmp        = (input + 0.5) * log(tmp) - tmp;
+	tmp       += logPi;
+	double cZero{cZeroInit};
+	// save a copy of x for incrementing
+	double inputCopy = input;
+
+	for (const auto &eachCoeff : gCoeff) {
+		inputCopy += 1.0;
+		cZero += eachCoeff / inputCopy;
 	}
-	// very large x
-	double xln = log(x);
-	double lrg = 1.0 / ( 2.0 * std::numeric_limits<double>::epsilon() );
-	if(x * xln > lrg) {
-		return xln;
+
+	return tmp + log(cZero / input);
+}
+
+double BayesicSpace::digamma(const double &input) noexcept {
+	constexpr int32_t nMax{100};
+	constexpr int32_t nCrit = std::min(-std::numeric_limits<double>::min_exponent, std::numeric_limits<double>::max_exponent);
+	constexpr double r1m4{0.5 * std::numeric_limits<double>::epsilon()};
+	constexpr double r1m5{0.301029995663981195213738894724};            // log_10(2)
+	constexpr double wdtol = std::max(r1m4, 0.5e-18);
+	constexpr double elim  = 2.302 * (static_cast<double>(nCrit) * r1m5 - 3.0);  // = 700.6174...
+	constexpr double lnRcrit{18.06};
+	constexpr double lnFcrit{3.0};
+	constexpr double lrg = 1.0 / ( 2.0 * std::numeric_limits<double>::epsilon() );
+	constexpr double rln = std::min(r1m5 * static_cast<double>(std::numeric_limits<double>::digits), lnRcrit);
+	constexpr double fln = 3.50 + 0.40 * std::max(rln, lnFcrit);
+
+	constexpr std::array<double, 22> bvalues {
+		1.00000000000000000e+00, -5.00000000000000000e-01,
+		1.66666666666666667e-01, -3.33333333333333333e-02,
+		2.38095238095238095e-02, -3.33333333333333333e-02,
+		7.57575757575757576e-02, -2.53113553113553114e-01,
+		1.16666666666666667e+00, -7.09215686274509804e+00,
+		5.49711779448621554e+01, -5.29124242424242424e+02,
+		6.19212318840579710e+03, -8.65802531135531136e+04,
+		1.42551716666666667e+06, -2.72982310678160920e+07,
+		6.01580873900642368e+08, -1.51163157670921569e+10,
+		4.29614643061166667e+11, -1.37116552050883328e+13,
+		4.88332318973593167e+14, -1.92965793419400681e+16
+	};
+
+	// very large input
+	const double lnInput = log(input);
+	if (std::isnan(input) || input <= 0.0 || lnInput < -elim) {
+		return nan("");
 	}
-	const int32_t n    = (-std::numeric_limits<double>::min_exponent < std::numeric_limits<double>::max_exponent ? -std::numeric_limits<double>::min_exponent : std::numeric_limits<double>::max_exponent);
-	const double r1m4  = 0.5 * std::numeric_limits<double>::epsilon();
-	const double r1m5  = 0.301029995663981195213738894724;            // log_10(2)
-	const double wdtol = (r1m4 > 0.5e-18 ? r1m4 : 0.5e-18);
-	const double elim  = 2.302 * (static_cast<double>(n) * r1m5 - 3.0);  // = 700.6174...
-	// small x and underflow conditions
-	if (xln < -elim){
-		return nan(""); // underflow
-	} else if (x < wdtol){
-		return -1.0 / x;
+	if(input * lnInput > lrg) {
+		return lnInput;
+	}
+	if (input < wdtol) {
+		return -1.0 / input;
 	}
 
 	// regular calculations
-	double rln   = r1m5 * static_cast<double>(std::numeric_limits<double>::digits);
-	rln          = (rln < 18.06 ? rln : 18.06);
-	double fln   = (rln > 3.0 ? rln-3.0 : 0.0);
-	assert( (fln >= 0.0) && "ERROR: fln value less than 0 in locDigamma()" );
-	const double fn   = 3.50 + 0.40 * fln;
-	const double xmin = ceil(fn);
-	double xdmy       = x;
-	double xdmln      = xln;
-	double xinc       = 0.0;
-	if (x < xmin){
-		xinc  = xmin - floor(x);
-		xdmy  = x + xinc;
-		xdmln = log(xdmy);
+	const double minInput{ceil(fln)};
+	double inputCopy{input};          // make a copy of the input
+	double lnInputCopy{lnInput};
+	double incInput{0.0};
+	if (input < minInput) {
+		incInput    = minInput - floor(input);
+		inputCopy   = input + incInput;
+		lnInputCopy = log(inputCopy);
 	}
 
-	double tk = 2.0 * xdmln;
-	if (tk <= elim){ // for x not large
-		double t1   = 0.5 / xdmy;
-		double tst  = wdtol*t1;
-		double rxsq = 1.0 / (xdmy * xdmy);
-		double t    = 0.5 * rxsq;
-		double s    = t * bvalues_[2];
-		if (fabs(s) >= tst) {
-			tk = 2.0;
-			for(uint16_t k = 4; k <= 22; ++k){
-				t         *= ( (tk + 1.0) / (tk + 1.0) ) * ( tk / (tk + 2.0) ) * rxsq;
-				double tmp = t * bvalues_[k-1];
-				if (fabs(tmp) < tst){
+	double seriesElement = 2.0 * lnInputCopy;
+	if (seriesElement <= elim) { // for input not large
+		double firstSeriesElement{0.5 / inputCopy};
+		double testValue  = wdtol * firstSeriesElement;
+		double rxsq       = 1.0 / (inputCopy * inputCopy);
+		double seriesProd = 0.5 * rxsq;
+		double seriesSum  = seriesProd * bvalues[2];
+		if (fabs(seriesSum) >= testValue) {
+			seriesElement = 2.0;
+			for(size_t bernoulliIndex = 3; bernoulliIndex < bvalues.size(); ++bernoulliIndex) {
+				seriesProd *= ( (seriesElement + 1.0) / (seriesElement + 1.0) ) * ( seriesElement / (seriesElement + 2.0) ) * rxsq;
+				double tmp  = seriesProd * bvalues.at(bernoulliIndex);
+				if (fabs(tmp) < testValue) {
 					break;
 				}
-				s += tmp;
-				tk += 2.0;
+				seriesSum     += tmp;
+				seriesElement += 2.0;
 			}
 		}
-		s += t1;
-		if (xinc > 0.0) {
-			// backward recursion from xdmy to x
-			int32_t nx = static_cast<int32_t>(xinc);
-			assert( (nx <= nMax) && "ERROR: Increment nx too large in locDigamma()" );
-			for(int32_t i = 1; i <= nx; ++i){
-				s += 1.0 / ( x + static_cast<double>(nx - i) ); // avoid disastrous cancellation, according to the comment in the R code
+		seriesSum += firstSeriesElement;
+		if (incInput > 0.0) {
+			// backward recursion from inputCopy to input
+			const auto integerInput = static_cast<int32_t>(incInput);
+			assert( (integerInput <= nMax) && "ERROR: Increment nx too large in digamma()" );
+			for(int32_t idx = 1; idx <= integerInput; ++idx) {
+				seriesSum += 1.0 / ( input + static_cast<double>(integerInput - idx) ); // avoid disastrous cancellation, according to the comment in the R code
 			}
 		}
-		return xdmln - s;
-	} else {
-		double s   = -x;
-		double den = x;
-		for(uint32_t i = 0; i < static_cast<uint32_t>(fln) + 1; ++i){ // checked fln for < 0.0, so this should be safe
-			den += 1.0;
-			s   += 1.0 / den;
-		}
-		return -s;
+		return lnInputCopy - seriesSum;
 	}
-}
-double NumerUtil::dotProd(const std::vector<double> &v) const noexcept {
-	double dotProd = 0.0;
-	for (auto &element : v){
-		dotProd += element * element;
+	double seriesSum = -input;
+	double den       = input;
+	for(uint32_t i = 0; i < static_cast<uint32_t>(fln) + 1; ++i) { // fln is derived from positive constants
+		den += 1.0;
+		seriesSum   += 1.0 / den;
 	}
-	return dotProd;
+	return -seriesSum;
 }
-double NumerUtil::dotProd(const std::vector<double> &v1, const std::vector<double> &v2) const noexcept {
-	double dotProd = 0.0;
-	auto v1It      = v1.begin();
-	auto v2It      = v2.begin();
-	// this ensures that we don't go beyond one of the vectors; worth declaring the iterators outside the loop and the extra operations
-	for ( ; (v1It != v1.end()) && (v2It != v2.end()); ++v1It, ++v2It){
-		dotProd += (*v1It) * (*v2It);
-	}
-	return dotProd;
-}
-void NumerUtil::updateWeightedMean(const double &xn, const double &wn, double &mu, double &w) const noexcept {
-	if ( wn > std::numeric_limits<double>::epsilon() ){
-		const double a = mu * w;
-		w += wn;
-		mu = (a + wn * xn) / w;
-	}
-}
-double NumerUtil::mean(const double arr[], const size_t &len) const noexcept {
-	double mean = 0.0;
 
-	for (size_t i = 0; i < len; ++i){
-		mean += (arr[i] - mean) / static_cast<double>(i + 1);
+double BayesicSpace::dotProd(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
+	const double dotProd = std::inner_product(begin, end, begin, 0.0);
+	return dotProd;
+}
+
+double BayesicSpace::dotProd(std::vector<double>::const_iterator firstBegin,
+								std::vector<double>::const_iterator firstEnd,
+								std::vector<double>::const_iterator secondBegin,
+								const std::vector<double> &second) {
+	const auto firstSize  = std::distance(firstBegin, firstEnd);
+	const auto secondSize = std::distance(secondBegin, second.cend());
+	if (secondSize < firstSize) {
+		throw std::string("ERROR: second vector must have enough elements to complete inner product in ") +
+			std::string( static_cast<const char*>(__PRETTY_FUNCTION__) );
 	}
+
+	const double dotProd = std::inner_product(firstBegin, firstEnd, secondBegin, 0.0);
+
+	return dotProd;
+}
+
+BayesicSpace::ValueWithWeight BayesicSpace::updateWeightedMean(const BayesicSpace::ValueWithWeight &nextDataPoint,
+					const BayesicSpace::ValueWithWeight &currentMean) noexcept {
+	BayesicSpace::ValueWithWeight result{currentMean};
+	if ( nextDataPoint.weight > std::numeric_limits<double>::epsilon() ) {
+		const double tmp = currentMean.value * currentMean.weight;
+		result.weight += nextDataPoint.weight;
+		result.value = (tmp + nextDataPoint.weight * nextDataPoint.value) / result.weight;
+	}
+	return result;
+}
+
+double BayesicSpace::stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
+	double mean{0.0};
+	double index{1.0};
+
+	std::for_each(begin, end, [&mean, &index](double element){
+						mean  += (element - mean) / index;
+						index += 1.0;});
 	return mean;
 }
