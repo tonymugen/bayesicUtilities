@@ -74,38 +74,60 @@ double BayesicSpace::logistic(const double &input) noexcept {
 	return 1.0 / ( 1.0 + exp(-input) );
 }
 
-double BayesicSpace::lnGamma(const double &input) noexcept {
+double BayesicSpace::lnGamma(double input) noexcept {
 	if (input <= 0.0) {
 		return nan("");
 	}
-
-	constexpr std::array<double, 14> gCoeff {
-		57.1562356658629235,     59.5979603554754912,
-		14.1360979747417471,     -0.491913816097620199,
-		0.339946499848118887e-4,  0.465236289270485756e-4,
-		-0.983744753048795646e-4, 0.158088703224912494e-3,
-		-0.210264441724104883e-3, 0.217439618115212643e-3,
-		-0.164318106536763890e-3, 0.844182239838527433e-4,
-		-0.261908384015814087e-4, 0.368991826595316234e-5
-	};
-
-	// define the weird magical coefficients
-	constexpr double gamma{5.24218750000000000};      // 671/128
-	constexpr double logPi{0.91893853320467267};      // 0.5*log(2.0*pi)
-	constexpr double cZeroInit{0.999999999999997092}; // c_0
-	double tmp = input + gamma;
-	tmp        = (input + 0.5) * log(tmp) - tmp;
-	tmp       += logPi;
-	double cZero{cZeroInit};
-	// save a copy of x for incrementing
-	double inputCopy = input;
-
-	for (const auto &eachCoeff : gCoeff) {
-		inputCopy += 1.0;
-		cZero += eachCoeff / inputCopy;
+	// alternative method for small input values
+	constexpr double inputCutOff{0.02};
+	if (input < inputCutOff) {
+		constexpr std::array<double, 10> smallInputCoeff { // from the GSL lngamma_sgn_0 function
+			-0.07721566490153286061,
+			-0.01094400467202744461,
+			 0.09252092391911371098,
+			-0.01827191316559981266,
+			 0.01800493109685479790,
+			-0.00685088537872380685,
+			 0.00399823955756846603,
+			-0.00189430621687107802,
+			 0.00097473237804513221,
+			-0.00048434392722255893
+		};
+		double lancsozG{smallInputCoeff.back()};
+		std::for_each(smallInputCoeff.crbegin() - 1, smallInputCoeff.crend(),
+				[input, &lancsozG](const double &coeff){lancsozG = coeff + input * lancsozG;});
+		lancsozG *= input;
+		return log( (lancsozG + 1.0 / (1.0 + input) + 0.5 * input) / input );
 	}
 
-	return tmp + log(cZero / input);
+	// main Lanczos method
+	constexpr double logRootTwoPi{0.91893853320467267};       // 0.5*ln(2.0*pi)
+	constexpr double eulerE{2.71828182845904523536028747135};
+	constexpr double lanczosOffset{7.5};                      // from the GSL lngamma_lanczos function
+	constexpr double term2offset{7.0};
+	constexpr std::array<double, 9> lanczos7coeff {
+		0.99999999999980993227684700473478,
+		676.520368121885098567009190444019,
+		-1259.13921672240287047156078755283,
+		771.3234287776530788486528258894,
+		-176.61502916214059906584551354,
+		12.507343278686904814458936853,
+		-0.13857109526572011689554707,
+		9.984369578019570859563e-6,
+		1.50563273514931155834e-7
+	};
+	input -= 1.0;
+	double lanczosAg{lanczos7coeff[0]};
+	double sumIdx{1.0};
+	std::for_each(
+		lanczos7coeff.cbegin() + 1,
+		lanczos7coeff.cend(),
+		[&lanczosAg, &sumIdx, input](double cSubk){
+			lanczosAg += cSubk / (input + sumIdx);
+			sumIdx += 1.0;}
+	);
+
+	return (input + 0.5) * log( (input + lanczosOffset) / eulerE ) + (logRootTwoPi + log(lanczosAg) - term2offset);
 }
 
 double BayesicSpace::digamma(const double &input) noexcept {
@@ -191,8 +213,8 @@ double BayesicSpace::digamma(const double &input) noexcept {
 	double seriesSum = -input;
 	double den       = input;
 	for(uint32_t i = 0; i < static_cast<uint32_t>(fln) + 1; ++i) { // fln is derived from positive constants
-		den += 1.0;
-		seriesSum   += 1.0 / den;
+		den       += 1.0;
+		seriesSum += 1.0 / den;
 	}
 	return -seriesSum;
 }
@@ -213,9 +235,26 @@ double BayesicSpace::dotProd(std::vector<double>::const_iterator firstBegin,
 			std::string( static_cast<const char*>(__PRETTY_FUNCTION__) );
 	}
 
-	const double dotProd = std::inner_product(firstBegin, firstEnd, secondBegin, 0.0);
+	const double dotProd = std::inner_product(firstBegin, firstEnd, secondBegin, 0.0); // NOLINT
 
 	return dotProd;
+}
+
+double BayesicSpace::stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
+	double mean{0.0};
+	double index{1.0};
+
+	std::for_each(begin, end, [&mean, &index](double element){
+						mean  += (element - mean) / index;
+						index += 1.0;});
+	return mean;
+}
+
+double BayesicSpace::stupidMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
+	double mean{0.0};
+
+	std::for_each(begin, end, [&mean](double element){mean  += element;});
+	return mean / static_cast<double>( std::distance(begin, end) );
 }
 
 BayesicSpace::ValueWithWeight BayesicSpace::updateWeightedMean(const BayesicSpace::ValueWithWeight &nextDataPoint,
@@ -227,14 +266,4 @@ BayesicSpace::ValueWithWeight BayesicSpace::updateWeightedMean(const BayesicSpac
 		result.value = (tmp + nextDataPoint.weight * nextDataPoint.value) / result.weight;
 	}
 	return result;
-}
-
-double BayesicSpace::stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
-	double mean{0.0};
-	double index{1.0};
-
-	std::for_each(begin, end, [&mean, &index](double element){
-						mean  += (element - mean) / index;
-						index += 1.0;});
-	return mean;
 }

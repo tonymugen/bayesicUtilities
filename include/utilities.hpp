@@ -66,16 +66,17 @@ namespace BayesicSpace {
 	[[nodiscard]] double logistic(const double &input) noexcept;
 	/** \brief Logarithm of the Gamma function
 	 *
-	 * The log of the \f$ \Gamma(x) \f$ function. Implementing the Lanczos algorithm following Numerical Recipes in C++.
+	 * The log of the \f$ \Gamma(x) \f$ function for real \f$ x > 0 \f$ (non-positive input values produce `NaN`).
+	 * Implementing the Lanczos algorithm following GSL.
 	 *
-	 * \param[in] input value
+	 * \param[in] input input, passed by value
 	 * \return \f$ \log \Gamma(input) \f$
 	 *
 	 */
-	[[nodiscard]] double lnGamma(const double &input) noexcept;
+	[[nodiscard]] double lnGamma(double input) noexcept;
 	/** \brief Digamma function
 	 *
-	 * Defined only for \f$ x > 0 \f$, will return _NaN_ otherwise. Adopted from the `dpsifn` function in R.
+	 * Defined only for \f$ x > 0 \f$, will return `NaN` otherwise. Adopted from the `dpsifn` function in R.
 	 *
 	 * \param[in] input function argument (must be positive)
 	 * \return value of the digamma function
@@ -102,6 +103,16 @@ namespace BayesicSpace {
 								std::vector<double>::const_iterator firstEnd,
 								std::vector<double>::const_iterator secondBegin,
 								const std::vector<double> &second);
+	/** \brief Mean of a vector of `double`
+	 *
+	 * Uses the numerically stable recursive algorithm.
+	 *
+	 * \param[in] begin iterator to first element
+	 * \param[in] end iterator to one past the last element
+	 * \return mean value
+	 */
+	[[nodiscard]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
+	[[nodiscard]] double stupidMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
@@ -115,14 +126,5 @@ namespace BayesicSpace {
 	 * \return new mean and sum of weights
 	 */
 	 [[nodiscard]] ValueWithWeight updateWeightedMean(const ValueWithWeight &nextDataPoint, const ValueWithWeight &currentMean) noexcept;
-	/** \brief Mean of a vector of `double`
-	 *
-	 * Uses the numerically stable recursive algorithm.
-	 *
-	 * \param[in] begin iterator to first element
-	 * \param[in] end iterator to one past the last element
-	 * \return mean value
-	 */
-	[[nodiscard]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 }
 

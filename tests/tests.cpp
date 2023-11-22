@@ -34,6 +34,7 @@
 #include <ratio>
 #include <vector>
 #include <array>
+#include <limits>
 
 #include <iostream>
 
@@ -53,6 +54,8 @@ static constexpr float FPREC{1e-4F};
 static constexpr double DPREC{1e-4};
 // number of distribution deviates to generate
 static constexpr size_t N_DEVIATES{1000};
+// 10X the double epsilon
+static constexpr double MUL_DOUBLE_EPS{10.0 * std::numeric_limits<double>::epsilon()};
 
 TEST_CASE("Random number generator works properly", "[prng]") {
 	constexpr uint64_t seed{2153025619};
@@ -247,5 +250,75 @@ TEST_CASE("Utilities work properly", "[util]") {
 	REQUIRE(fabs(BayesicSpace::logistic(bigLogistic) + BayesicSpace::logistic(-bigLogistic) - 1.0) <= DPREC);
 	REQUIRE(fabs(BayesicSpace::logistic(niceLogistic) + BayesicSpace::logistic(-niceLogistic) - 1.0) <= DPREC);
 	REQUIRE(fabs(BayesicSpace::logistic( BayesicSpace::logit(testLogit) ) - testLogit) < DPREC);
-}
 
+	// lnGamma
+	REQUIRE( std::isnan( BayesicSpace::lnGamma(-1.0) ) );
+	REQUIRE(fabs(BayesicSpace::lnGamma(1.0)) <= MUL_DOUBLE_EPS);
+	constexpr double testLG1{0.013};
+	constexpr double testLG2{7.35};
+	constexpr double correctLG1{4.33544};
+	constexpr double correctLG2{7.24397};
+	REQUIRE(fabs(BayesicSpace::lnGamma(testLG1) - correctLG1) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::lnGamma(testLG2) - correctLG2) <= DPREC);
+	constexpr uint16_t nLGtests{10};
+	double currZ{testLG1};
+	for (uint16_t iLG = 0; iLG < nLGtests; ++iLG) {
+		// testing the log-Gamma recursion
+		REQUIRE(fabs( BayesicSpace::lnGamma(currZ) - BayesicSpace::lnGamma(currZ + 1.0) + log(currZ) ) <= DPREC);
+		currZ += 0.5;
+	}
+
+	// digamma
+	REQUIRE( std::isnan( BayesicSpace::digamma(-1.0) ) );
+	constexpr double largeInput{3.1e21};
+	constexpr double tinyInput{1.0e-17};
+	constexpr double rootVal{1.461632144968362};
+	constexpr double testDGalue1{0.13};
+	constexpr double testDGalue2{11.34};
+	constexpr double correctDGalue1{-8.07388};
+	constexpr double correctDGalue2{2.3836};
+	constexpr double eulerConstant{0.5772156649};
+	REQUIRE(fabs( BayesicSpace::digamma(largeInput) - log(largeInput) ) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::digamma(tinyInput) + 1.0 / tinyInput) <= DPREC);
+	REQUIRE(fabs( BayesicSpace::digamma(rootVal) ) <= MUL_DOUBLE_EPS);
+	REQUIRE(fabs(BayesicSpace::digamma(testDGalue1) - correctDGalue1) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::digamma(testDGalue2) - correctDGalue2) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::digamma(1.0) + eulerConstant) <= DPREC);
+	constexpr uint16_t nDGtests{10};
+	double currX{testLG1};
+	for (uint16_t iDG = 0; iDG < nDGtests; ++iDG) {
+		// testing the digamma recursion
+		REQUIRE(fabs( BayesicSpace::digamma(currX + 1.0) - BayesicSpace::digamma(currX)  - 1.0 / currX ) <= DPREC);
+		currX += 0.5;
+	}
+
+	// dot products
+	constexpr std::array<double, 11> testArray1 {
+		0.9599027, 0.5084086, 1.1381224, -0.5632494, -0.5972133, 1.2555985,
+		-0.2760020, -1.1939086, -0.7454797, 1.7004699, -1.4847591
+	};
+	constexpr std::array<double, 11> testArray2 {
+		1.83941715332874, -1.01071106140829, -1.37696213968154, 0.227406257382323,
+		2.08788585893456, 1.56032485376061, -1.01659801265071, 0.329786842248178,
+		-0.851614769872224, -0.976615503871935, 0.46038209714626
+	};
+	constexpr double correctDP1{11.8791};
+	constexpr double correctDP2{-1.553755};
+	const std::vector<double> testVector1( testArray1.cbegin(), testArray1.cend() );
+	const std::vector<double> testVector2( testArray2.cbegin(), testArray2.cend() );
+	REQUIRE(fabs(BayesicSpace::dotProd( testVector1.cbegin(), testVector1.cend() ) - correctDP1) <= DPREC);
+	REQUIRE(fabs(BayesicSpace::dotProd(testVector1.cbegin(), testVector1.cend(), testVector2.cbegin(), testVector2) - correctDP2) <= DPREC);
+	const std::vector<double> testVectorShort( testArray2.cbegin(), testArray2.cend() - 1 );
+	REQUIRE_THROWS_WITH(BayesicSpace::dotProd(testVector1.cbegin(), testVector1.cend(), testVectorShort.cbegin(), testVectorShort),
+		Catch::Matchers::StartsWith("ERROR: second vector must have enough elements to complete inner product in ") );
+
+	// means
+	constexpr std::array<double, 10> badSequence{
+		2.0e16, 1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, -2.0e16
+	};
+	std::vector<double> badVec( badSequence.cbegin(), badSequence.cend() );
+	std::cout << BayesicSpace::stupidMean( badVec.cbegin(), badVec.cend() ) << "; " 
+		<< BayesicSpace::stupidMean( badVec.cbegin() + 1, badVec.cend() - 1 ) << "; " 
+		<< BayesicSpace::stableMean( badVec.cbegin(), badVec.cend() ) << "; "
+		<< BayesicSpace::stableMean( badVec.cbegin() + 1, badVec.cend() - 1 ) << "\n";
+}
