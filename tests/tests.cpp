@@ -316,9 +316,64 @@ TEST_CASE("Utilities work properly", "[util]") {
 	constexpr std::array<double, 10> badSequence{
 		2.0e16, 1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, -2.0e16
 	};
+	constexpr double correctBadMean{0.25};        // not actually correct, but we get this with round-off error
+	constexpr std::array<double, 10> goodSequence{
+		2.0, 1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, -2.0
+	};
+	constexpr double correctGoodMean{0.15};
+
+	std::vector<double> goodVec( goodSequence.cbegin(), goodSequence.cend() );
+	REQUIRE(fabs( BayesicSpace::stableMean(goodVec.cbegin(), goodVec.cend()) - correctGoodMean) <= DPREC);
 	std::vector<double> badVec( badSequence.cbegin(), badSequence.cend() );
-	std::cout << BayesicSpace::stupidMean( badVec.cbegin(), badVec.cend() ) << "; " 
-		<< BayesicSpace::stupidMean( badVec.cbegin() + 1, badVec.cend() - 1 ) << "; " 
-		<< BayesicSpace::stableMean( badVec.cbegin(), badVec.cend() ) << "; "
-		<< BayesicSpace::stableMean( badVec.cbegin() + 1, badVec.cend() - 1 ) << "\n";
+	REQUIRE(fabs( BayesicSpace::stableMean(badVec.cbegin(), badVec.cend()) - correctBadMean) <= DPREC);
+	// put the problematic values in front
+	constexpr double pivot{1e15};
+	const auto partIt = std::partition(badVec.begin(), badVec.end(), [pivot](double value){return fabs(value) >= pivot;});
+	REQUIRE(fabs( BayesicSpace::stableMean(badVec.cbegin(), badVec.cend()) - correctGoodMean) <= DPREC);
+
+	constexpr std::array<double, 10> values {
+		1.83812816311139,
+		1.66240550302203,
+		-0.730270599541738,
+		0.298794956353938,
+		-0.481312253352987,
+		0.618358082520749,
+		0.608482019177987,
+		0.0640491595283403,
+		-0.881191673547658,
+		1.44956447718804
+	};
+	constexpr std::array<double, 10> weights {
+		0.397077904548496,
+		0.783165919128805,
+		0.331695592496544,
+		0.201664255000651,
+		0.208346518222243,
+		0.00108311511576176,
+		0.371712836204097,
+		0.22624196857214,
+		0.514477380085737,
+		0.193607843015343
+	};
+	std::vector<BayesicSpace::ValueWithWeight> weightedValues;
+	weightedValues.reserve( values.size() );
+	for (size_t iVal = 0; iVal < values.size(); ++iVal) {
+		BayesicSpace::ValueWithWeight tmp{};
+		tmp.value  = values.at(iVal);
+		tmp.weight = weights.at(iVal);
+		weightedValues.emplace_back(tmp);
+	}
+	BayesicSpace::ValueWithWeight weightedMean{0.0, 0.0};
+	weightedMean = std::accumulate(
+		weightedValues.cbegin(),
+		weightedValues.cend(),
+		weightedMean,
+		[](const BayesicSpace::ValueWithWeight &currentSum, const BayesicSpace::ValueWithWeight &currentValue){
+			return BayesicSpace::updateWeightedMean(currentSum, currentValue);
+		}
+	);
+	constexpr double correctWmean{0.563073};
+	constexpr double correctWsum{3.22907};
+	REQUIRE(fabs(weightedMean.value - correctWmean) <= DPREC);
+	REQUIRE(fabs(weightedMean.weight - correctWsum) <= DPREC);
 }

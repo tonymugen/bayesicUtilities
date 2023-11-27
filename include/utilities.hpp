@@ -105,14 +105,16 @@ namespace BayesicSpace {
 								const std::vector<double> &second);
 	/** \brief Mean of a vector of `double`
 	 *
-	 * Uses the numerically stable recursive algorithm.
+	 * Uses the numerically stable recursive algorithm (no actual recursion is done).
+	 * If the vector has a few positive and negative elements whose absolute value is large,
+	 * the mean estimate still deviates from the correct result. In such cases it may be worth it
+	 * to partition the input using some large absolute cut-off to put the big values close together.
 	 *
 	 * \param[in] begin iterator to first element
 	 * \param[in] end iterator to one past the last element
 	 * \return mean value
 	 */
 	[[nodiscard]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
-	[[nodiscard]] double stupidMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is

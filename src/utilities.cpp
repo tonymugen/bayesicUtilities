@@ -241,20 +241,18 @@ double BayesicSpace::dotProd(std::vector<double>::const_iterator firstBegin,
 }
 
 double BayesicSpace::stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
-	double mean{0.0};
 	double index{1.0};
 
-	std::for_each(begin, end, [&mean, &index](double element){
-						mean  += (element - mean) / index;
-						index += 1.0;});
+	const double mean = std::accumulate(
+			begin,
+			end,
+			0.0, 
+			[&index](double currentSum, double currentValue){
+				currentSum += (currentValue - currentSum) / index;
+				index      += 1.0;
+				return currentSum;
+			});
 	return mean;
-}
-
-double BayesicSpace::stupidMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept {
-	double mean{0.0};
-
-	std::for_each(begin, end, [&mean](double element){mean  += element;});
-	return mean / static_cast<double>( std::distance(begin, end) );
 }
 
 BayesicSpace::ValueWithWeight BayesicSpace::updateWeightedMean(const BayesicSpace::ValueWithWeight &nextDataPoint,
