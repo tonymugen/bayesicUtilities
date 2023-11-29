@@ -377,3 +377,97 @@ TEST_CASE("Utilities work properly", "[util]") {
 	REQUIRE(fabs(weightedMean.value - correctWmean) <= DPREC);
 	REQUIRE(fabs(weightedMean.weight - correctWsum) <= DPREC);
 }
+
+TEST_CASE("Index class works properly", "[index]") {
+	constexpr std::array<size_t, 101> groupArr{
+		3, 0, 0, 2, 1, 2, 1, 2, 2, 3, 2, 2, 0, 2, 0, 0, 2, 0, 2, 1, 2, 0, 3, 1, 2, 1, 1, 2, 1, 3, 0,
+		3, 2, 0, 3, 1, 2, 0, 2, 0, 0, 1, 2, 3, 2, 0, 2, 2, 2, 1, 0, 1, 2, 3, 3, 1, 1, 2, 2, 1, 1, 0,
+		1, 0, 3, 0, 3, 0, 1, 2, 3, 0, 2, 2, 2, 2, 3, 2, 1, 2, 2, 1, 1, 2, 1, 3, 3, 0, 0, 3, 3, 1, 1,
+		0, 1, 2, 0, 1, 1, 3, 0
+	};
+	constexpr size_t correctInitGroups{4};
+	constexpr size_t nGroupsEmpty{11};
+	BayesicSpace::Index emptyIdx{nGroupsEmpty};
+	REQUIRE(emptyIdx.groupNumber()   == nGroupsEmpty);
+	REQUIRE(emptyIdx.neGroupNumber() == 0);
+	REQUIRE(emptyIdx.size()          == 0);
+	for (size_t iGrp = 0; iGrp < nGroupsEmpty; ++iGrp) {
+		REQUIRE(emptyIdx.groupSize(iGrp) == 0);
+	}
+	const std::vector<size_t> groupVec( groupArr.cbegin(), groupArr.cend() );
+	BayesicSpace::Index testIdx( groupVec.cbegin(), groupVec.cend() );
+	REQUIRE(testIdx.groupNumber()   == correctInitGroups);
+	REQUIRE( testIdx.size()         == groupVec.size() );
+	REQUIRE(testIdx.neGroupNumber() == correctInitGroups);
+	size_t vecIdx{0};
+	REQUIRE(std::all_of(
+			groupVec.cbegin(),
+			groupVec.cend(),
+			[&testIdx, &vecIdx](size_t correctGroupID){
+				return testIdx.groupID(vecIdx++) == correctGroupID; // postfix essential
+			}
+		)
+	);
+	std::vector< std::vector<size_t> > groups(correctInitGroups);
+	size_t arrIdx{0};
+	std::for_each(groupArr.cbegin(), groupArr.cend(), [&groups, &arrIdx](size_t grpID){groups.at(grpID).push_back(arrIdx++);});
+	size_t grpIdx{0};
+	REQUIRE(std::all_of(
+			groups.cbegin(),
+			groups.cend(), 
+			[&testIdx, &grpIdx](const std::vector<size_t> &eachGrp){
+				return std::equal(eachGrp.cbegin(), eachGrp.cend(), testIdx[grpIdx++].cbegin());
+			}
+		)
+	);
+	constexpr std::array<size_t, 101> newGroupArr{
+		0, 0, 2, 2, 0, 2, 2, 0, 0, 2, 3, 3, 3, 0, 3, 2, 2, 2, 2, 3, 0, 2, 3, 0, 0, 0, 2, 0, 3, 2, 0,
+		2, 0, 0, 0, 2, 3, 3, 3, 0, 2, 3, 2, 2, 3, 0, 3, 3, 2, 3, 3, 3, 3, 2, 2, 2, 0, 2, 3, 0, 0, 0,
+		3, 0, 0, 3, 3, 3, 2, 2, 0, 0, 3, 0, 2, 0, 0, 0, 2, 3, 0, 3, 2, 3, 2, 3, 3, 2, 3, 0, 0, 3, 3,
+		3, 3, 3, 2, 2, 0, 0, 0
+	};
+	const std::vector<size_t> newGroupVec( newGroupArr.cbegin(), newGroupArr.cend() );
+	constexpr size_t correctNewGroups{3};
+	testIdx.update( newGroupVec.cbegin(), newGroupVec.cend() );
+	REQUIRE( testIdx.size()         == newGroupArr.size() );
+	REQUIRE(testIdx.groupNumber()   == correctInitGroups);
+	REQUIRE(testIdx.neGroupNumber() == correctNewGroups);
+	std::vector< std::vector<size_t> > newGroups(correctInitGroups);
+	arrIdx = 0;
+	std::for_each(newGroupArr.cbegin(), newGroupArr.cend(), [&newGroups, &arrIdx](size_t grpID){newGroups.at(grpID).push_back(arrIdx++);});
+	grpIdx = 0;
+	REQUIRE(std::all_of(
+			newGroups.cbegin(),
+			newGroups.cend(), 
+			[&testIdx, &grpIdx](const std::vector<size_t> &eachGrp){
+				return std::equal(eachGrp.cbegin(), eachGrp.cend(), testIdx[grpIdx++].cbegin());
+			}
+		)
+	);
+	REQUIRE_THROWS_WITH(BayesicSpace::Index("notThere.txt"),
+		Catch::Matchers::StartsWith("ERROR: Cannot open file") );
+	REQUIRE_THROWS_WITH(BayesicSpace::Index("../tests/testIdxWrong.txt"),
+		Catch::Matchers::StartsWith("ERROR: Negative group ID in") );
+	BayesicSpace::Index fileIdx("../tests/testIdx.txt");
+	REQUIRE(fileIdx.groupNumber()   == correctInitGroups);
+	REQUIRE( fileIdx.size()         == groupVec.size() );
+	REQUIRE(fileIdx.neGroupNumber() == correctInitGroups);
+	vecIdx = 0;
+	REQUIRE(std::all_of(
+			groupVec.cbegin(),
+			groupVec.cend(),
+			[&fileIdx, &vecIdx](size_t correctGroupID){
+				return fileIdx.groupID(vecIdx++) == correctGroupID; // postfix essential
+			}
+		)
+	);
+	grpIdx = 0;
+	REQUIRE(std::all_of(
+			groups.cbegin(),
+			groups.cend(), 
+			[&fileIdx, &grpIdx](const std::vector<size_t> &eachGrp){
+				return std::equal(eachGrp.cbegin(), eachGrp.cend(), fileIdx[grpIdx++].cbegin());
+			}
+		)
+	);
+}

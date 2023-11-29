@@ -21,7 +21,7 @@
 /** \file
  * \author Anthony J. Greenberg
  * \copyright Copyright (c) 2017 -- 2022 Anthony J. Greenberg
- * \version 1.0
+ * \version 1.1
  *
  * Definitions and interface documentation for a class that relates individuals to groups, similar to an factor in R.
  *
@@ -35,35 +35,28 @@
 namespace BayesicSpace {
 	/** \brief Group index
 	 *
-	 * For each group, contains indexes of the lines that belong to it. Can also identify the group a given element belongs to. Group numbers need not be consecutive. Although group IDs are assumed to be base-0, everything should work even if they are not.
+	 * For each group, contains indexes of the lines that belong to it. Can also identify the group a given element belongs to.
+	 * Group numbers need not be consecutive. Although group IDs are assumed to be base-0, everything should work even if they are not.
 	 */
 	class Index {
-
 	public:
 		/** \brief Default constructor */
-		Index() {};
+		Index() = default;
 		/** \brief Group constructor
 		 *
 		 * Sets up empty groups.
 		 *
 		 * \param[in] Ngroups number of groups to set up
 		 */
-		Index(const size_t &Ngroups);
-		/** \brief Array constructor
-		 *
-		 * The input array has an element for each line, and the value of that element is the base-0 group ID (i.e., if line _n_ is in the first group, then `arr[n] == 0`).
-		 *
-		 * \param[in] arr array of group IDs
-		 * \param[in] N array length
-		 */
-		Index(const size_t *arr, const size_t &N);
-		/** \brief Vector constructor
+		Index(const size_t &nGroups);
+		/** \brief Vector iterator constructor
 		 *
 		 * The input vector has an element for each line, and the value of that element is the base-0 group ID (i.e., if line _n_ is in the first group, then `vec[n] == 0`).
 		 *
-		 * \param[in] vec array of group IDs
+		 * \param[in] groupVecBegin start iterator of the group ID vector
+		 * \param[in] groupVecEnd end iterator of the group ID vector
 		 */
-		Index(const std::vector<size_t> &vec);
+		Index(std::vector<size_t>::const_iterator groupVecBegin, std::vector<size_t>::const_iterator groupVecEnd);
 		/** \brief File read constructor
 		 *
 		 * The input file has an entry for each line (separated by white space), and the value of that entry is the base-0 group ID.
@@ -74,62 +67,62 @@ namespace BayesicSpace {
 		Index(const std::string &inFileName);
 		/** \brief Copy constructor
 		 *
-		 * \param[in] in `Index` to be copied
+		 * \param[in] toCopy `Index` to be copied
 		 */
-		Index(const Index &in);
+		Index(const Index &toCopy) = default;
 		/** \brief Copy assignment operator
 		 *
-		 * \param[in] in object to be copied
+		 * \param[in] toCopy object to be copied
 		 * \return an `Index` object
 		 */
-		Index &operator=(const Index &in);
+		Index &operator=(const Index &toCopy) = default;
 		/** \brief Move constructor
 		 *
-		 * \param[in] in `Index` object to be moved
+		 * \param[in] toMove `Index` object to be moved
 		 */
-		Index(Index &&in) noexcept;
+		Index(Index &&toMove) noexcept = default;
 		/** \brief Move assignment operator
 		 *
-		 * \param[in] in object to be moved
+		 * \param[in] toMove object to be moved
 		 * \return an `Index` object
 		 */
-		Index &operator=(Index &&in) noexcept;
+		Index &operator=(Index &&toMove) noexcept = default;
 		/** \brief Destructor */
-		~Index(){};
+		~Index() = default;
 
 		/** \brief Vector subscript operator
 		 *
 		 * Returns the index of group _i_.
 		 *
-		 * \param[in] i group index
+		 * \param[in] index group index
 		 * \return index of line IDs
 		 */
-		const std::vector<size_t> & operator[] (const size_t &i) const { return index_[i]; };
+		[[nodiscard]] const std::vector<size_t> & operator[] (const size_t &index) const { return index_[index]; };
 
 		/** \brief Group size
 		 *
-		 * \param[in] i group index
+		 * \param[in] index group index
 		 * \return size of the _i_th group
 		 */
-		size_t groupSize(const size_t &i) const {return index_[i].size(); };
+		[[nodiscard]] size_t groupSize(const size_t &index) const {return index_[index].size(); };
 
 		/** \brief Total sample size
 		 *
 		 * \return total sample size
 		 */
-		size_t size() const {return groupVal_.size(); };
+		[[nodiscard]] size_t size() const noexcept {return groupVal_.size(); };
 
 		/** \brief Number of groups
 		 *
 		 * \return number of groups
 		 */
-		size_t groupNumber() const {return index_.size(); };
+		[[nodiscard]] size_t groupNumber() const noexcept {return index_.size(); };
 
 		/** \brief Number of non-empty groups
 		 *
 		 * \return number of non-empty groups
 		 */
-		size_t neGroupNumber() const;
+		[[nodiscard]] size_t neGroupNumber() const noexcept;
 
 		/** \brief Group ID
 		 *
@@ -139,16 +132,17 @@ namespace BayesicSpace {
 		 *
 		 * \return group ID
 		 */
-		size_t groupID(const size_t &ind) const {return groupVal_[ind]; };
+		[[nodiscard]] size_t groupID(const size_t &ind) const {return groupVal_[ind]; };
 
 		/** \brief Update the index
 		 *
 		 * Updates the groups with a new index. If a group is not present in the new vector, it is left empty but still exists.
+		 * The new vector must not contain any new groups. This is checked only in debug mode via `assert()`.
 		 *
-		 * \param[in] newVec new vector of group IDs
-		 *
+		 * \param[in] newGrpVecBegin start iterator of the group ID vector
+		 * \param[in] newGrpVecEnd end iterator of the group ID vector
 		 */
-		void update(const std::vector<size_t> &newVec);
+		void update(std::vector<size_t>::const_iterator newGrpVecBegin, std::vector<size_t>::const_iterator newGrpVecEnd);
 
 	private:
 		/** \brief Vector of index vectors
