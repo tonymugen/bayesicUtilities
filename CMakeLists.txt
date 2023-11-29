@@ -164,9 +164,9 @@ set(CMAKE_CXX_STATIC_LINKER_FLAGS_TEST
 include(GNUInstallDirs)
 
 add_library(brUtilities
-	src/random.cpp
-	src/index.cpp
-	src/utilities.cpp
+	${CMAKE_CURRENT_LIST_DIR}/src/random.cpp
+	${CMAKE_CURRENT_LIST_DIR}/src/index.cpp
+	${CMAKE_CURRENT_LIST_DIR}/src/utilities.cpp
 )
 
 set_target_properties(brUtilities PROPERTIES
