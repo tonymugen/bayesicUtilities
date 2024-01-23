@@ -324,7 +324,7 @@ std::vector<double> RanDraw::rdirichlet(const std::vector<double> &alpha) {
 	}
 
 	if (norm < sqrtDoubleMin_) { // underflow
-		probabilities = std::move( this->rdirichletSmall_(alpha) );
+		probabilities = this->rdirichletSmall_(alpha);
 		return probabilities;
 	}
 

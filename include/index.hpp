@@ -97,32 +97,32 @@ namespace BayesicSpace {
 		 * \param[in] index group index
 		 * \return index of line IDs
 		 */
-		[[nodiscard]] const std::vector<size_t> & operator[] (const size_t &index) const { return index_[index]; };
+		[[gnu::warn_unused_result]] const std::vector<size_t> & operator[] (const size_t &index) const { return index_[index]; };
 
 		/** \brief Group size
 		 *
 		 * \param[in] index group index
 		 * \return size of the _i_th group
 		 */
-		[[nodiscard]] size_t groupSize(const size_t &index) const {return index_[index].size(); };
+		[[gnu::warn_unused_result]] size_t groupSize(const size_t &index) const {return index_[index].size(); };
 
 		/** \brief Total sample size
 		 *
 		 * \return total sample size
 		 */
-		[[nodiscard]] size_t size() const noexcept {return groupVal_.size(); };
+		[[gnu::warn_unused_result]] size_t size() const noexcept {return groupVal_.size(); };
 
 		/** \brief Number of groups
 		 *
 		 * \return number of groups
 		 */
-		[[nodiscard]] size_t groupNumber() const noexcept {return index_.size(); };
+		[[gnu::warn_unused_result]] size_t groupNumber() const noexcept {return index_.size(); };
 
 		/** \brief Number of non-empty groups
 		 *
 		 * \return number of non-empty groups
 		 */
-		[[nodiscard]] size_t neGroupNumber() const noexcept;
+		[[gnu::warn_unused_result]] size_t neGroupNumber() const noexcept;
 
 		/** \brief Group ID
 		 *
@@ -132,7 +132,7 @@ namespace BayesicSpace {
 		 *
 		 * \return group ID
 		 */
-		[[nodiscard]] size_t groupID(const size_t &ind) const {return groupVal_[ind]; };
+		[[gnu::warn_unused_result]] size_t groupID(const size_t &ind) const {return groupVal_[ind]; };
 
 		/** \brief Update the index
 		 *

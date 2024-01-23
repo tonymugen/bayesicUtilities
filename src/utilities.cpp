@@ -93,9 +93,12 @@ double BayesicSpace::lnGamma(double input) noexcept {
 			 0.00097473237804513221,
 			-0.00048434392722255893
 		};
-		double lancsozG{smallInputCoeff.back()};
-		std::for_each(smallInputCoeff.crbegin() - 1, smallInputCoeff.crend(),
-				[input, &lancsozG](const double &coeff){lancsozG = coeff + input * lancsozG;});
+		double lancsozG = std::accumulate(
+			std::next( smallInputCoeff.crbegin() ),
+			smallInputCoeff.crend(),
+			smallInputCoeff.back(),
+			[input](const double &cumLG, const double &coeff){return coeff + input * cumLG;}
+		);
 		lancsozG *= input;
 		return log( (lancsozG + 1.0 / (1.0 + input) + 0.5 * input) / input );
 	}
@@ -120,7 +123,7 @@ double BayesicSpace::lnGamma(double input) noexcept {
 	double lanczosAg{lanczos7coeff[0]};
 	double sumIdx{1.0};
 	std::for_each(
-		lanczos7coeff.cbegin() + 1,
+		std::next( lanczos7coeff.cbegin() ),
 		lanczos7coeff.cend(),
 		[&lanczosAg, &sumIdx, input](double cSubk){
 			lanczosAg += cSubk / (input + sumIdx);

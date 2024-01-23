@@ -91,7 +91,7 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTS)
 	FetchContent_Declare(
 	  Catch2
 	  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-	  GIT_TAG        v3.4.0 # or a later release
+	  GIT_TAG        v3.5.2 # or a later release
 	  GIT_PROGRESS   TRUE
 	  SYSTEM                # to disable Catch2 warnings
 	)
@@ -105,16 +105,17 @@ if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GN
 	set(SANITIZERS "")
 	check_cxx_compiler_flag(-fsanitize=address    HAS_ADDRESS_SANITIZER)
 	check_cxx_compiler_flag(-fsanitize=leak       HAS_LEAK_SANITIZER)
-	check_cxx_compiler_flag(-fsanitize=undefined  HAS_UNDEFINED_SANITIZER)
+	#check_cxx_compiler_flag(-fsanitize=undefined  HAS_UNDEFINED_SANITIZER)
 	if(${HAS_ADDRESS_SANITIZER})
 		list(APPEND SANITIZERS "address")
 	endif()
 	if(${HAS_LEAK_SANITIZER})
 		list(APPEND SANITIZERS "leak")
 	endif()
-	if(${HAS_UNDEFINED_SANITIZER})
-		list(APPEND SANITIZERS "undefined")
-	endif()
+	# Weird linking errors with UBSAN, leave off for now
+	#if(${HAS_UNDEFINED_SANITIZER} AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	#	list(APPEND SANITIZERS "undefined")
+	#endif()
 	list(JOIN
 		SANITIZERS
 		","
@@ -124,41 +125,17 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE
 	"-O3 -DNDEBUG"
 )
-set(CMAKE_CXX_SHARED_LINKER_FLAGS_RELEASE
-	"-O3 -DNDEBUG"
-)
-set(CMAKE_CXX_STATIC_LINKER_FLAGS_RELEASE
-	"-O3 -DNDEBUG"
-)
 
 set(CMAKE_CXX_FLAGS_PROFILE
 	"-g -p -O3 -DNDEBUG"
 )
-set(CMAKE_CXX_SHARED_LINKER_FLAGS_PROFILE
-	"-g -p -O3 -DNDEBUG"
-)
-set(CMAKE_CXX_STATIC_LINKER_FLAGS_PROFILE
-	"-g -p -O3 -DNDEBUG"
-)
 
 set(CMAKE_CXX_FLAGS_DEBUG
-	"-g -O1 -fsanitize=${SANITIZER_LIST}"
-)
-set(CMAKE_CXX_SHARED_LINKER_FLAGS_DEBUG
-	"-g -O1 -fsanitize=${SANITIZER_LIST}"
-)
-set(CMAKE_CXX_STATIC_LINKER_FLAGS_DEBUG
-	"-g -O1 -fsanitize=${SANITIZER_LIST}"
+	"-g -O1"
 )
 
 set(CMAKE_CXX_FLAGS_TEST
-	"-g -O3 -fsanitize=${SANITIZER_LIST}"
-)
-set(CMAKE_CXX_SHARED_LINKER_FLAGS_TEST
-	"-g -O3 -fsanitize=${SANITIZER_LIST}"
-)
-set(CMAKE_CXX_STATIC_LINKER_FLAGS_TEST
-	"-g -O3 -fsanitize=${SANITIZER_LIST}"
+	"-g -O3"
 )
 
 include(GNUInstallDirs)
@@ -173,6 +150,16 @@ set_target_properties(brUtilities PROPERTIES
 	CXX_STANDARD_REQURED ON
 	POSITION_INDEPENDENT_CODE ON
 )
+if(PROJECT_IS_TOP_LEVEL)
+	target_compile_options(brUtilities
+		PRIVATE ${PROJECT_WARNINGS_CXX}
+	)
+	if(BUILD_TESTS)
+		target_compile_options(brUtilities
+			PRIVATE -fsanitize=${SANITIZER_LIST}
+		)
+	endif()
+endif()
 
 target_include_directories(brUtilities
 	PRIVATE include

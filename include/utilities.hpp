@@ -55,7 +55,7 @@ namespace BayesicSpace {
 	 * \param[in] probability probability in the (0, 1) interval
 	 * \return logit transformation
 	 */
-	[[nodiscard]] double logit(const double &probability) noexcept;
+	[[gnu::warn_unused_result]] double logit(const double &probability) noexcept;
 	/** \brief Logistic function
 	 *
 	 * There is a guard against under- and overflow: the function returns 0.0 for \f$ x \le -35.0\f$ and 1.0 for \f$x \ge 35.0\f$.
@@ -63,7 +63,7 @@ namespace BayesicSpace {
 	 * \param[in] input value to be projected to the (0, 1) interval
 	 * \return logistic transformation
 	 */
-	[[nodiscard]] double logistic(const double &input) noexcept;
+	[[gnu::warn_unused_result]] double logistic(const double &input) noexcept;
 	/** \brief Logarithm of the Gamma function
 	 *
 	 * The log of the \f$ \Gamma(x) \f$ function for real \f$ x > 0 \f$ (non-positive input values produce `NaN`).
@@ -73,7 +73,7 @@ namespace BayesicSpace {
 	 * \return \f$ \log \Gamma(input) \f$
 	 *
 	 */
-	[[nodiscard]] double lnGamma(double input) noexcept;
+	[[gnu::warn_unused_result]] double lnGamma(double input) noexcept;
 	/** \brief Digamma function
 	 *
 	 * Defined only for \f$ x > 0 \f$, will return `NaN` otherwise. Adopted from the `dpsifn` function in R.
@@ -81,14 +81,14 @@ namespace BayesicSpace {
 	 * \param[in] input function argument (must be positive)
 	 * \return value of the digamma function
 	 */
-	[[nodiscard]] double digamma(const double &input) noexcept;
+	[[gnu::warn_unused_result]] double digamma(const double &input) noexcept;
 	/** \brief Vector self-dot-product
 	 *
 	 * \param[in] begin first element iterator
 	 * \param[in] end one past the last element iterator
 	 * \return dot-product value
 	 */
-	[[nodiscard]] double dotProd(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
+	[[gnu::warn_unused_result]] double dotProd(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 	/** \brief Dot-product of two `double` vectors
 	 *
 	 * Throws if the second vector range goes past its end (the second vector reference is needed for the check).
@@ -99,7 +99,7 @@ namespace BayesicSpace {
 	 * \param[in] second second vector
 	 * \return dot-product value
 	 */
-	[[nodiscard]] double dotProd(std::vector<double>::const_iterator firstBegin,
+	[[gnu::warn_unused_result]] double dotProd(std::vector<double>::const_iterator firstBegin,
 								std::vector<double>::const_iterator firstEnd,
 								std::vector<double>::const_iterator secondBegin,
 								const std::vector<double> &second);
@@ -114,7 +114,7 @@ namespace BayesicSpace {
 	 * \param[in] end iterator to one past the last element
 	 * \return mean value
 	 */
-	[[nodiscard]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
+	[[gnu::warn_unused_result]] double stableMean(std::vector<double>::const_iterator begin, std::vector<double>::const_iterator end) noexcept;
 	/** \brief Weighted mean update
 	 *
 	 * Takes the current weighted mean and updates using the new data point and weight. The formula is
@@ -127,6 +127,6 @@ namespace BayesicSpace {
 	 * \param[in] currentMean mean and sum of weights up to the next point
 	 * \return new mean and sum of weights
 	 */
-	 [[nodiscard]] ValueWithWeight updateWeightedMean(const ValueWithWeight &nextDataPoint, const ValueWithWeight &currentMean) noexcept;
+	 [[gnu::warn_unused_result]] ValueWithWeight updateWeightedMean(const ValueWithWeight &nextDataPoint, const ValueWithWeight &currentMean) noexcept;
 }
 

@@ -47,7 +47,7 @@ Index::Index(const size_t &Ngroups) {
 }
 
 Index::Index(std::vector<size_t>::const_iterator groupVecBegin, std::vector<size_t>::const_iterator groupVecEnd) {
-	groupVal_.reserve( std::distance(groupVecBegin, groupVecEnd) );
+	groupVal_.reserve( static_cast<size_t>( std::distance(groupVecBegin, groupVecEnd) ) );
 	size_t elInd{0};
 	std::for_each(
 		groupVecBegin,
@@ -109,7 +109,7 @@ Index::Index(const std::string &inFileName) {
 }
 
 size_t Index::neGroupNumber() const noexcept {
-	return std::count_if(index_.cbegin(), index_.cend(), [](const std::vector<size_t> &group){return !group.empty();});
+	return static_cast<size_t>( std::count_if(index_.cbegin(), index_.cend(), [](const std::vector<size_t> &group){return !group.empty();}) );
 }
 
 void Index::update(std::vector<size_t>::const_iterator newGrpVecBegin, std::vector<size_t>::const_iterator newGrpVecEnd) {
@@ -125,6 +125,6 @@ void Index::update(std::vector<size_t>::const_iterator newGrpVecBegin, std::vect
 			++elInd;
 		}
 	);
-	groupVal_.resize( std::distance(newGrpVecBegin, newGrpVecEnd) );
+	groupVal_.resize( static_cast<size_t>( std::distance(newGrpVecBegin, newGrpVecEnd) ) );
 	std::copy( newGrpVecBegin, newGrpVecEnd, groupVal_.begin() );
 }
